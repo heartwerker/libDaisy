@@ -66,11 +66,17 @@ class SSD130x4WireSpiTransport
         {
             dsy_gpio_pin dc;    /**< & */
             dsy_gpio_pin reset; /**< & */
+
+            dsy_gpio_pin cs_display;
+            dsy_gpio_pin cs_shift_register; /**< & */
         } pin_config;
+
         void Defaults()
         {
             pin_config.dc    = {DSY_GPIOB, 4};
             pin_config.reset = {DSY_GPIOB, 15};
+            pin_config.cs_display = {DSY_GPIOG, 10}; // = pin7
+            pin_config.cs_shift_register = {DSY_GPIOB, 16};
         }
     };
     void Init(const Config& config)
@@ -82,11 +88,21 @@ class SSD130x4WireSpiTransport
         pin_reset_.mode = DSY_GPIO_MODE_OUTPUT_PP;
         pin_reset_.pin  = config.pin_config.reset;
         dsy_gpio_init(&pin_reset_);
+
+        pin_cs_display_.mode = DSY_GPIO_MODE_OUTPUT_PP;
+        pin_cs_display_.pin  = config.pin_config.cs_display;
+        dsy_gpio_init(&pin_cs_display_);
+
+        pin_cs_shift_register_.mode = DSY_GPIO_MODE_OUTPUT_PP;
+        pin_cs_shift_register_.pin  = config.pin_config.cs_shift_register;
+        dsy_gpio_init(&pin_cs_shift_register_);
+
+
         // Initialize SPI
         SpiHandle::Config spi_config;
         spi_config.periph    = SpiHandle::Config::Peripheral::SPI_1;
         spi_config.mode      = SpiHandle::Config::Mode::MASTER;
-        spi_config.direction = SpiHandle::Config::Direction::TWO_LINES_TX_ONLY;
+        spi_config.direction = SpiHandle::Config::Direction::TWO_LINES;
         spi_config.datasize  = 8;
         spi_config.clock_polarity = SpiHandle::Config::ClockPolarity::LOW;
         spi_config.clock_phase    = SpiHandle::Config::ClockPhase::ONE_EDGE;
@@ -94,9 +110,10 @@ class SSD130x4WireSpiTransport
         spi_config.baud_prescaler = SpiHandle::Config::BaudPrescaler::PS_8;
 
         spi_config.pin_config.sclk = {DSY_GPIOG, 11};
-        spi_config.pin_config.miso = {DSY_GPIOX, 0};
+        spi_config.pin_config.miso = {DSY_GPIOB, 4}; //{DSY_GPIOX, 0};
         spi_config.pin_config.mosi = {DSY_GPIOB, 5};
-        spi_config.pin_config.nss  = {DSY_GPIOG, 10};
+        spi_config.pin_config.nss  = {DSY_GPIOX, 0}; //{DSY_GPIOG, 10}; // = pin7
+        
 
         spi_.Init(spi_config);
 
@@ -109,19 +126,38 @@ class SSD130x4WireSpiTransport
     void SendCommand(uint8_t cmd)
     {
         dsy_gpio_write(&pin_dc_, 0);
+        
+        dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(&cmd, 1);
+        dsy_gpio_write(&pin_cs_display_, 1);
     };
 
     void SendData(uint8_t* buff, size_t size)
     {
         dsy_gpio_write(&pin_dc_, 1);
+        
+        dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(buff, size);
+        dsy_gpio_write(&pin_cs_display_, 1);
     };
+
+    void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
+    {
+        dsy_gpio_write(&pin_cs_shift_register_, 0);
+        spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
+        dsy_gpio_write(&pin_cs_shift_register_, 1);
+    }
 
   private:
     SpiHandle spi_;
     dsy_gpio  pin_reset_;
     dsy_gpio  pin_dc_;
+    
+    dsy_gpio  pin_cs_display_;
+
+    dsy_gpio  pin_cs_shift_register_;
+
+    
 };
 
 
@@ -275,6 +311,11 @@ class SSD130xDriver
             transport_.SendData(&buffer_[width * i], width);
         }
     };
+    
+    void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
+    {
+      transport_.ioShiftRegisters(txBuffer, rxBuffer, size);
+    }
 
   private:
     Transport transport_;
