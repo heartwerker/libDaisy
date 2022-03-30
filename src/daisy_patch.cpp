@@ -250,7 +250,7 @@ void DaisyPatch::InitDisplay()
 {
     OledDisplay<SSD130x4WireSpi128x64Driver>::Config display_config;
 
-    display_config.driver_config.transport_config.pin_config.dc
+    display_config.driver_config.transport_config.pin_config.dc_cmd
         = seed.GetPin(PIN_OLED_DC);
     display_config.driver_config.transport_config.pin_config.reset
         = seed.GetPin(PIN_OLED_RESET);

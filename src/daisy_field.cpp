@@ -127,7 +127,7 @@ void DaisyField::Init(bool boost)
     // OLED
     OledDisplay<SSD130x4WireSpi128x64Driver>::Config display_config;
 
-    display_config.driver_config.transport_config.pin_config.dc
+    display_config.driver_config.transport_config.pin_config.dc_cmd
         = seed.GetPin(PIN_OLED_CMD);
     display_config.driver_config.transport_config.pin_config.reset
         = {DSY_GPIOX, 0}; // Not a real pin...

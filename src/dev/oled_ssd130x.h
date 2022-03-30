@@ -64,7 +64,7 @@ class SSD130x4WireSpiTransport
     {
         struct
         {
-            dsy_gpio_pin dc;    /**< & */
+            dsy_gpio_pin dc_cmd;    /**< & */
             dsy_gpio_pin reset; /**< & */
 
             dsy_gpio_pin cs_display;
@@ -73,7 +73,7 @@ class SSD130x4WireSpiTransport
 
         void Defaults()
         {
-            pin_config.dc    = {DSY_GPIOB, 4};
+            pin_config.dc_cmd    = {DSY_GPIOB, 4};
             pin_config.reset = {DSY_GPIOB, 15};
             pin_config.cs_display = {DSY_GPIOG, 10}; // = pin7
             pin_config.cs_shift_register = {DSY_GPIOB, 16};
@@ -83,7 +83,7 @@ class SSD130x4WireSpiTransport
     {
         // Initialize both GPIO
         pin_dc_.mode = DSY_GPIO_MODE_OUTPUT_PP;
-        pin_dc_.pin  = config.pin_config.dc;
+        pin_dc_.pin  = config.pin_config.dc_cmd;
         dsy_gpio_init(&pin_dc_);
         pin_reset_.mode = DSY_GPIO_MODE_OUTPUT_PP;
         pin_reset_.pin  = config.pin_config.reset;
@@ -106,7 +106,7 @@ class SSD130x4WireSpiTransport
         spi_config.datasize  = 8;
         spi_config.clock_polarity = SpiHandle::Config::ClockPolarity::LOW;
         spi_config.clock_phase    = SpiHandle::Config::ClockPhase::ONE_EDGE;
-        spi_config.nss            = SpiHandle::Config::NSS::HARD_OUTPUT;
+        spi_config.nss            = SpiHandle::Config::NSS::SOFT;
         spi_config.baud_prescaler = SpiHandle::Config::BaudPrescaler::PS_8;
 
         spi_config.pin_config.sclk = {DSY_GPIOG, 11};
@@ -114,6 +114,8 @@ class SSD130x4WireSpiTransport
         spi_config.pin_config.mosi = {DSY_GPIOB, 5};
         spi_config.pin_config.nss  = {DSY_GPIOX, 0}; //{DSY_GPIOG, 10}; // = pin7
         
+        dsy_gpio_write(&pin_cs_display_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_, 1);
 
         spi_.Init(spi_config);
 
@@ -130,6 +132,8 @@ class SSD130x4WireSpiTransport
         dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(&cmd, 1);
         dsy_gpio_write(&pin_cs_display_, 1);
+
+        dsy_gpio_write(&pin_dc_, 1);
     };
 
     void SendData(uint8_t* buff, size_t size)
@@ -139,13 +143,20 @@ class SSD130x4WireSpiTransport
         dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(buff, size);
         dsy_gpio_write(&pin_cs_display_, 1);
+
+        dsy_gpio_write(&pin_dc_, 0);
     };
 
     void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
     {
+        dsy_gpio_write(&pin_cs_shift_register_, 1);
+        System::DelayUs(1);
         dsy_gpio_write(&pin_cs_shift_register_, 0);
+        
         spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
         dsy_gpio_write(&pin_cs_shift_register_, 1);
+        System::DelayUs(1);
+        dsy_gpio_write(&pin_cs_shift_register_, 0);
     }
 
   private:
