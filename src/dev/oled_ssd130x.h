@@ -115,7 +115,7 @@ class SSD130x4WireSpiTransport
         spi_config.pin_config.nss  = {DSY_GPIOX, 0}; //{DSY_GPIOG, 10}; // = pin7
         
         dsy_gpio_write(&pin_cs_display_, 1);
-        dsy_gpio_write(&pin_cs_shift_register_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_, 0);
 
         spi_.Init(spi_config);
 
@@ -154,10 +154,10 @@ class SSD130x4WireSpiTransport
         dsy_gpio_write(&pin_cs_shift_register_, 1);
 
         spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
-        
-        dsy_gpio_write(&pin_cs_shift_register_, 1);
-        System::DelayUs(1);
+
         dsy_gpio_write(&pin_cs_shift_register_, 0);
+        System::DelayUs(1);
+        dsy_gpio_write(&pin_cs_shift_register_, 1);
     }
 
   private:
