@@ -149,11 +149,12 @@ class SSD130x4WireSpiTransport
 
     void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
     {
-        dsy_gpio_write(&pin_cs_shift_register_, 1);
-        System::DelayUs(1);
         dsy_gpio_write(&pin_cs_shift_register_, 0);
-        
+        System::DelayUs(1);
+        dsy_gpio_write(&pin_cs_shift_register_, 1);
+
         spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
+        
         dsy_gpio_write(&pin_cs_shift_register_, 1);
         System::DelayUs(1);
         dsy_gpio_write(&pin_cs_shift_register_, 0);
