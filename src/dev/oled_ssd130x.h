@@ -68,15 +68,17 @@ class SSD130x4WireSpiTransport
             dsy_gpio_pin reset; /**< & */
 
             dsy_gpio_pin cs_display;
-            dsy_gpio_pin cs_shift_register; /**< & */
+            dsy_gpio_pin cs_shift_register_in; /**< & */
+            dsy_gpio_pin cs_shift_register_out; /**< & */
         } pin_config;
 
         void Defaults()
         {
-            pin_config.dc_cmd    = {DSY_GPIOB, 4};
-            pin_config.reset = {DSY_GPIOB, 15};
-            pin_config.cs_display = {DSY_GPIOG, 10}; // = pin7
-            pin_config.cs_shift_register = {DSY_GPIOB, 16};
+            pin_config.dc_cmd               = {DSY_GPIOB, 4};
+            pin_config.reset                = {DSY_GPIOB, 15};
+            pin_config.cs_display           = {DSY_GPIOG, 10}; // = pin7
+            pin_config.cs_shift_register_in = {DSY_GPIOB, 16};
+            pin_config.cs_shift_register_out = {DSY_GPIOB, 17};
         }
     };
     void Init(const Config& config)
@@ -93,10 +95,13 @@ class SSD130x4WireSpiTransport
         pin_cs_display_.pin  = config.pin_config.cs_display;
         dsy_gpio_init(&pin_cs_display_);
 
-        pin_cs_shift_register_.mode = DSY_GPIO_MODE_OUTPUT_PP;
-        pin_cs_shift_register_.pin  = config.pin_config.cs_shift_register;
-        dsy_gpio_init(&pin_cs_shift_register_);
+        pin_cs_shift_register_in_.mode = DSY_GPIO_MODE_OUTPUT_PP;
+        pin_cs_shift_register_in_.pin  = config.pin_config.cs_shift_register_in;
+        dsy_gpio_init(&pin_cs_shift_register_in_);
 
+        pin_cs_shift_register_out_.mode = DSY_GPIO_MODE_OUTPUT_PP;
+        pin_cs_shift_register_out_.pin  = config.pin_config.cs_shift_register_out;
+        dsy_gpio_init(&pin_cs_shift_register_out_);
 
         // Initialize SPI
         SpiHandle::Config spi_config;
@@ -115,7 +120,9 @@ class SSD130x4WireSpiTransport
         spi_config.pin_config.nss  = {DSY_GPIOX, 0}; //{DSY_GPIOG, 10}; // = pin7
         
         dsy_gpio_write(&pin_cs_display_, 1);
-        dsy_gpio_write(&pin_cs_shift_register_, 0);
+        dsy_gpio_write(&pin_cs_shift_register_in_, 0);
+
+        dsy_gpio_write(&pin_cs_shift_register_out_, 0);
 
         spi_.Init(spi_config);
 
@@ -149,15 +156,16 @@ class SSD130x4WireSpiTransport
 
     void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
     {
-        dsy_gpio_write(&pin_cs_shift_register_, 0);
+        dsy_gpio_write(&pin_cs_shift_register_in_, 0);
         System::DelayUs(1);
-        dsy_gpio_write(&pin_cs_shift_register_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_in_, 1);
 
+        dsy_gpio_write(&pin_cs_shift_register_out_, 0);
         spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
 
-        dsy_gpio_write(&pin_cs_shift_register_, 0);
+        dsy_gpio_write(&pin_cs_shift_register_out_, 1);
         System::DelayUs(1);
-        dsy_gpio_write(&pin_cs_shift_register_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_out_, 0);
     }
 
   private:
@@ -167,7 +175,8 @@ class SSD130x4WireSpiTransport
     
     dsy_gpio  pin_cs_display_;
 
-    dsy_gpio  pin_cs_shift_register_;
+    dsy_gpio  pin_cs_shift_register_in_;
+    dsy_gpio  pin_cs_shift_register_out_;
 
     
 };
