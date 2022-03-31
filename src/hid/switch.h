@@ -65,6 +65,7 @@ class Switch
     be made at the same rate as the debounce function is being called.
     */
     void Debounce();
+    void processDebounce(bool value);
 
     /** \return true if a button was just pressed. */
     inline bool RisingEdge() const { return state_ == 0x7f; }

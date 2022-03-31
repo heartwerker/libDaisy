@@ -37,3 +37,14 @@ void Switch::Debounce()
     if(state_ == 0x7f)
         rising_edge_time_ = System::GetNow();
 }
+
+void Switch::processDebounce(bool value)
+{
+    // shift over, and introduce new state.
+    state_ = (state_ << 1) | value;
+    
+    // Set time at which button was pressed
+    if(state_ == 0x7f)
+        rising_edge_time_ = System::GetNow();
+}
+
