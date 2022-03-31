@@ -45,9 +45,9 @@ class OledDisplay : public OneBitGraphicsDisplayImpl<OledDisplay<DisplayDriver>>
         driver_.DrawPixel(x, y, on);
     }
 
-    void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size) override
+    void inputShiftRegisters(uint8_t *rxBuffer, uint8_t size) override
     {
-      driver_.ioShiftRegisters(txBuffer, rxBuffer, size);
+      driver_.inputShiftRegisters(rxBuffer, size);
     }
 
     /** 
