@@ -24,6 +24,8 @@ class OledDisplay : public OneBitGraphicsDisplayImpl<OledDisplay<DisplayDriver>>
 
     void Init(Config config) { driver_.Init(config.driver_config); }
 
+    
+
     uint16_t Height() const override { return driver_.Height(); }
     uint16_t Width() const override { return driver_.Width(); }
 
@@ -42,6 +44,11 @@ class OledDisplay : public OneBitGraphicsDisplayImpl<OledDisplay<DisplayDriver>>
     void DrawPixel(uint_fast8_t x, uint_fast8_t y, bool on) override
     {
         driver_.DrawPixel(x, y, on);
+    }
+
+    void inputShiftRegisters(uint8_t *rxBuffer, uint8_t size) override
+    {
+      driver_.inputShiftRegisters(rxBuffer, size);
     }
 
     /** 
