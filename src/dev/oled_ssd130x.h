@@ -120,9 +120,8 @@ class SSD130x4WireSpiTransport
         spi_config.pin_config.nss  = {DSY_GPIOX, 0}; //{DSY_GPIOG, 10}; // = pin7
         
         dsy_gpio_write(&pin_cs_display_, 1);
-        dsy_gpio_write(&pin_cs_shift_register_in_, 0);
-
-        dsy_gpio_write(&pin_cs_shift_register_out_, 0);
+        dsy_gpio_write(&pin_cs_shift_register_in_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_out_, 1);
 
         spi_.Init(spi_config);
 
@@ -134,38 +133,39 @@ class SSD130x4WireSpiTransport
     };
     void SendCommand(uint8_t cmd)
     {
+        dsy_gpio_write(&pin_cs_display_, 0);
+
         dsy_gpio_write(&pin_dc_, 0);
         
-        dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(&cmd, 1);
-        dsy_gpio_write(&pin_cs_display_, 1);
 
         dsy_gpio_write(&pin_dc_, 1);
+
+        dsy_gpio_write(&pin_cs_display_, 1);
     };
 
     void SendData(uint8_t* buff, size_t size)
     {
+        dsy_gpio_write(&pin_cs_display_, 0);
+
         dsy_gpio_write(&pin_dc_, 1);
         
-        dsy_gpio_write(&pin_cs_display_, 0);
         spi_.BlockingTransmit(buff, size);
-        dsy_gpio_write(&pin_cs_display_, 1);
 
         dsy_gpio_write(&pin_dc_, 0);
+
+        dsy_gpio_write(&pin_cs_display_, 1);
     };
 
     void ioShiftRegisters(uint8_t *txBuffer, uint8_t *rxBuffer, uint8_t size)
     {
         dsy_gpio_write(&pin_cs_shift_register_in_, 0);
-        System::DelayUs(1);
-        dsy_gpio_write(&pin_cs_shift_register_in_, 1);
+        dsy_gpio_write(&pin_cs_shift_register_in_, 1);   
+
+        spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size, 500);
 
         dsy_gpio_write(&pin_cs_shift_register_out_, 0);
-        spi_.BlockingTransmitAndReceive(txBuffer, rxBuffer, size);
-
         dsy_gpio_write(&pin_cs_shift_register_out_, 1);
-        System::DelayUs(1);
-        dsy_gpio_write(&pin_cs_shift_register_out_, 0);
     }
 
   private:
