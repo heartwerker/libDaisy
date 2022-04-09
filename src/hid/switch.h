@@ -67,11 +67,14 @@ class Switch
     void Debounce();
     void processDebounce(bool value);
 
+    float        activity_time_;
+    inline float sinceActivity() { return System::GetNow() - activity_time_; }
+
     /** \return true if a button was just pressed. */
-    inline bool RisingEdge() const { return state_ == 0x7f; }
+    bool RisingEdge();
 
     /** \return true if the button was just released */
-    inline bool FallingEdge() const { return state_ == 0x80; }
+    bool FallingEdge();
 
     /** \return true if the button is held down (or if the toggle is on) */
     inline bool Pressed() const { return state_ == 0xff; }
@@ -92,6 +95,7 @@ class Switch
      * \param update_rate Doesn't do anything
     */
     inline void SetUpdateRate(float update_rate) {}
+
 
   private:
     uint32_t last_update_;

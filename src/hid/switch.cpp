@@ -57,3 +57,21 @@ void Switch::processDebounce(bool value)
         rising_edge_time_ = System::GetNow();
 }
 
+
+/** \return true if a button was just pressed. */
+bool Switch::RisingEdge()
+{
+    bool rise = (state_ & 0x0F) == 0x07; // used to be state_ == 0x7f;
+    if(rise)
+        activity_time_ = System::GetNow();
+    return rise;
+}
+
+/** \return true if the button was just released */
+bool Switch::FallingEdge()
+{
+    bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    if(fall)
+        activity_time_ = System::GetNow();
+    return fall;
+}

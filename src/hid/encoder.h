@@ -36,10 +36,10 @@ class Encoder
     inline int32_t Increment() const { return inc_; }
 
     /** Returns true if the encoder was just pressed. */
-    inline bool RisingEdge() const { return sw_.RisingEdge(); }
+    inline bool RisingEdge() { return sw_.RisingEdge(); }
 
     /** Returns true if the encoder was just released. */
-    inline bool FallingEdge() const { return sw_.FallingEdge(); }
+    inline bool FallingEdge() { return sw_.FallingEdge(); }
 
     /** Returns true while the encoder is held down.*/
     inline bool Pressed() const { return sw_.Pressed(); }
