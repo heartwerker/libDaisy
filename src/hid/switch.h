@@ -90,6 +90,10 @@ class Switch
     {
         return Pressed() ? System::GetNow() - rising_edge_time_ : 0;
     }
+    inline float sinceRiseMs() const
+    {
+        return  System::GetNow() - rising_edge_time_;
+    }
 
     /** Left for backwards compatability until next breaking change
      * \param update_rate Doesn't do anything
