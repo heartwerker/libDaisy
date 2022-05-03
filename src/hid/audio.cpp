@@ -378,6 +378,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[0][i / 2] = s242f(in[i]) * audio_handle.postgain_recip_;
                     fin[1][i / 2]
                         = s242f(in[i + 1]) * audio_handle.postgain_recip_;
+#if 0
                     if(chns > 2)
                     {
                         fin[2][i / 2]
@@ -387,6 +388,18 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                             = s242f(audio_handle.buff_rx_[1][offset + i + 1])
                               * audio_handle.postgain_recip_;
                     }
+#else
+
+                    if(chns > 2)
+                    {
+                        fin[2][i / 2]
+                            = s162f(audio_handle.buff_rx_[1][offset + i])
+                              * audio_handle.postgain_recip_;
+                        fin[3][i / 2]
+                            = s162f(audio_handle.buff_rx_[1][offset + i + 1])
+                              * audio_handle.postgain_recip_;
+                    }
+#endif
                 }
                 break;
             case SaiHandle::Config::BitDepth::SAI_32BIT:
