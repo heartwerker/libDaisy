@@ -18,7 +18,7 @@ static const size_t kAudioMaxChannels   = 4;
 // 1k samples in, 1k samples out, 4 bytes per sample.
 // One buffer per 2 channels (Interleaved on hardware)
 static int32_t DMA_BUFFER_MEM_SECTION
-    dsy_audio_rx_buffer[kAudioMaxChannels / 2][kAudioMaxBufferSize];
+    dsy_audio_rx_buffer[/*kAudioMaxChannels*/ 6 / 2][kAudioMaxBufferSize];
 static int32_t DMA_BUFFER_MEM_SECTION
     dsy_audio_tx_buffer[kAudioMaxChannels / 2][kAudioMaxBufferSize];
 
@@ -43,7 +43,7 @@ class AudioHandle::Impl
     inline size_t GetChannels() const
     {
         if(sai1_.IsInitialized() && sai2_.IsInitialized())
-            return 4;
+            return 6;
         else if(sai1_.IsInitialized() || sai2_.IsInitialized())
             return 2;
         else
@@ -79,7 +79,7 @@ class AudioHandle::Impl
     // Data
     AudioHandle::Config config_;
     SaiHandle           sai1_, sai2_;
-    int32_t*            buff_rx_[2];
+    int32_t*            buff_rx_[3]; // MORE OF THESE
     int32_t*            buff_tx_[2];
     float               postgain_recip_;
 };
@@ -126,6 +126,8 @@ AudioHandle::Result AudioHandle::Impl::Init(const AudioHandle::Config config,
     sai2_       = sai2;
     buff_rx_[1] = dsy_audio_rx_buffer[1];
     buff_tx_[1] = dsy_audio_tx_buffer[1];
+    
+    buff_rx_[2] = dsy_audio_rx_buffer[2];
     // How do we want to handle the rx/tx buffs for the second peripheral of audio..?
     return Result::OK;
 }
@@ -156,9 +158,17 @@ AudioHandle::Impl::Start(AudioHandle::AudioCallback callback)
     // Get instance of object
     if(sai2_.IsInitialized())
     {
-        // Start stream with no callback. Data will be filled externally.
+// Start stream with no callback. Data will be filled externally.
+#if 0
         sai2_.StartDma(
             buff_rx_[1], buff_tx_[1], config_.blocksize * 2 * 2, nullptr);
+#else
+        sai2_.StartDma_DualAB(buff_rx_[1],
+                              buff_rx_[2],
+                              buff_tx_[1],
+                              config_.blocksize * 2 * 2,
+                              nullptr);
+#endif
     }
     sai1_.StartDma(buff_rx_[0],
                    buff_tx_[0],
@@ -337,7 +347,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
         AudioCallback cb = (AudioCallback)audio_handle.callback_;
         // offset needed for 2nd audio codec.
         size_t offset    = audio_handle.sai2_.GetOffset();
-        size_t buff_size = chns > 2 ? size * 2 : size;
+        size_t buff_size = chns > 4 ? size * 3 : (chns > 2 ? size * 2 : size);
         float  finbuff[buff_size], foutbuff[buff_size];
         float* fin[chns];
         float* fout[chns];
@@ -351,6 +361,13 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
             fin[3]  = fin[2] + (buff_size / chns);
             fout[2] = fout[1] + (buff_size / chns);
             fout[3] = fout[2] + (buff_size / chns);
+        }
+        if(chns > 4)
+        {
+            fin[4]  = fin[3] + (buff_size / chns);
+            fin[5]  = fin[4] + (buff_size / chns);
+            fout[4] = fout[3] + (buff_size / chns);
+            fout[5] = fout[4] + (buff_size / chns);
         }
         // Deinterleave and scale
         switch(bd)
@@ -399,6 +416,16 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                             = s162f(audio_handle.buff_rx_[1][offset + i + 1])
                               * audio_handle.postgain_recip_;
                     }
+                    if(chns > 4)
+                    {
+                        fin[4][i / 2]
+                            = s162f(audio_handle.buff_rx_[2][offset + i])
+                              * audio_handle.postgain_recip_;
+                        fin[5][i / 2]
+                            = s162f(audio_handle.buff_rx_[2][offset + i + 1])
+                              * audio_handle.postgain_recip_;
+                    }
+
 #endif
                 }
                 break;

@@ -24,6 +24,13 @@ class SaiHandle::Impl
                                        int32_t*                       buffer_tx,
                                        size_t                         size,
                                        SaiHandle::CallbackFunctionPtr callback);
+
+    SaiHandle::Result
+                      StartDmaTransfer_DualAB(int32_t*                       buffer_rx,
+                                              int32_t*                       buffer_rx2,
+                                              int32_t*                       buffer_tx,
+                                              size_t                         size,
+                                              SaiHandle::CallbackFunctionPtr callback);
     SaiHandle::Result StopDmaTransfer();
 
     // Utility functions
@@ -36,7 +43,7 @@ class SaiHandle::Impl
     DMA_HandleTypeDef sai_a_dma_handle_, sai_b_dma_handle_;
 
     // Data kept for Callback usage
-    int32_t *                      buff_rx_, *buff_tx_;
+    int32_t *                      buff_rx_, *buff_rx_2, *buff_tx_;
     size_t                         buff_size_;
     SaiHandle::CallbackFunctionPtr callback_;
 
@@ -84,6 +91,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
     // Default Buffer states
     buff_rx_   = nullptr;
+    buff_rx_2   = nullptr;
     buff_tx_   = nullptr;
     buff_size_ = 0;
     config_    = config;
@@ -198,7 +206,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
         Error_Handler();
         return Result::ERR;
     }
-
+  
     if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, 2) != HAL_OK)
     {
         Error_Handler();
@@ -335,6 +343,44 @@ SaiHandle::Impl::StartDmaTransfer(int32_t*                       buffer_rx,
             ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, size)
             : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, size);
     }
+
+    return Result::OK;
+}
+
+SaiHandle::Result
+SaiHandle::Impl::StartDmaTransfer_DualAB(int32_t*                buffer_rx,
+                                  int32_t*                       buffer_rx2,
+                                  int32_t*                       buffer_tx,
+                                  size_t                         size,
+                                  SaiHandle::CallbackFunctionPtr callback)
+{
+    buff_rx_   = buffer_rx;
+    buff_rx_2  = buffer_rx2;
+    buff_tx_   = buffer_tx;
+    buff_size_ = size;
+    callback_  = callback;
+
+    // This assumes there will be one master and one slave
+    if(config_.a_sync == Config::Sync::SLAVE)
+    {
+        config_.a_dir == Config::Direction::RECEIVE
+            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, size)
+            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, size);
+        config_.b_dir == Config::Direction::RECEIVE
+            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx2, size)
+            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, size);
+    }
+    /*
+    else
+    {
+        config_.b_dir == Config::Direction::RECEIVE
+            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx, size)
+            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, size);
+        config_.a_dir == Config::Direction::RECEIVE
+            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, size)
+            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, size);
+    }
+    */
 
     return Result::OK;
 }
@@ -565,6 +611,15 @@ SaiHandle::Result SaiHandle::StartDma(int32_t*            buffer_rx,
                                       CallbackFunctionPtr callback)
 {
     return pimpl_->StartDmaTransfer(buffer_rx, buffer_tx, size, callback);
+}
+
+SaiHandle::Result SaiHandle::StartDma_DualAB(int32_t*            buffer_rx,
+                                      int32_t*            buffer_rx2,
+                                      int32_t*            buffer_tx,
+                                      size_t              size,
+                                      CallbackFunctionPtr callback)
+{
+    return pimpl_->StartDmaTransfer_DualAB(buffer_rx, buffer_rx2, buffer_tx, size, callback);
 }
 
 SaiHandle::Result SaiHandle::StopDma()

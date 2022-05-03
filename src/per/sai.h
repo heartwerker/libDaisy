@@ -136,6 +136,16 @@ class SaiHandle
                     size_t              size,
                     CallbackFunctionPtr callback);
 
+    /** Starts Rx and Tx in Circular Buffer Mode 
+     ** The callback will be called when half of the buffer is ready, 
+     ** and will handle size/2 samples per callback.
+     */
+    Result StartDma_DualAB(int32_t*            buffer_rx,
+    int32_t*            buffer_rx2,
+                    int32_t*            buffer_tx,
+                    size_t              size,
+                    CallbackFunctionPtr callback);
+
     /** Stops the DMA stream for the SAI blocks in use. */
     Result StopDma();
 
