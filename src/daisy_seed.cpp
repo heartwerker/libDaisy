@@ -27,12 +27,12 @@ const dsy_gpio_pin seedgpio[31] = {
     // GPIO 9-16
     {DSY_GPIOG, 10},
     {DSY_GPIOG, 11},
-    {DSY_GPIOB, 4},
-    {DSY_GPIOB, 5},
-    {DSY_GPIOB, 8},
-    {DSY_GPIOB, 9},
-    {DSY_GPIOB, 6},
-    {DSY_GPIOB, 7},
+    {DSY_GPIOB, 4}, // 9
+    {DSY_GPIOB, 5}, // 10
+    {DSY_GPIOB, 8}, // 11 = TIM4_Ch3
+    {DSY_GPIOB, 9}, // 12 = TIM4_Ch4
+    {DSY_GPIOB, 6}, // 13 = TIM4_CH1
+    {DSY_GPIOB, 7}, // 14 = TIM4_CH2
     // GPIO 17-24
     {DSY_GPIOC, 0},
     {DSY_GPIOA, 3},
