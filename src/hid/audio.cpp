@@ -115,6 +115,11 @@ AudioHandle::Result AudioHandle::Impl::Init(const AudioHandle::Config config,
     }
     buff_rx_[0] = dsy_audio_rx_buffer[0];
     buff_tx_[0] = dsy_audio_tx_buffer[0];
+
+    for(int c = 0; c < 3; c++)
+        for(int i = 0; i < kAudioMaxBufferSize; i++)
+            dsy_audio_rx_buffer[c][i] = 0;
+
     return Result::OK;
 }
 
@@ -269,7 +274,7 @@ AudioHandle::Impl::SetSampleRate(SaiHandle::Config::SampleRate samplerate)
 void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 {
     // Convert from sai format to float, and call user callback
-    size_t                      chns;
+    volatile size_t                      chns;
     SaiHandle::Config::BitDepth bd;
     bd   = audio_handle.sai1_.GetConfig().bit_depth;
     chns = audio_handle.GetChannels();
@@ -347,7 +352,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
         AudioCallback cb = (AudioCallback)audio_handle.callback_;
         // offset needed for 2nd audio codec.
         size_t offset    = audio_handle.sai2_.GetOffset();
-        size_t buff_size = chns > 4 ? size * 3 : (chns > 2 ? size * 2 : size);
+        volatile size_t buff_size = chns > 4 ? size * 3 : (chns > 2 ? size * 2 : size);
         float  finbuff[buff_size], foutbuff[buff_size];
         float* fin[chns];
         float* fout[chns];
@@ -410,20 +415,20 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     if(chns > 2)
                     {
                         fin[2][i / 2]
-                            = s162f(audio_handle.buff_rx_[1][offset + i])
-                              * audio_handle.postgain_recip_;
+                            = s162f(audio_handle.buff_rx_[1][offset + i]);
                         fin[3][i / 2]
-                            = s162f(audio_handle.buff_rx_[1][offset + i + 1])
-                              * audio_handle.postgain_recip_;
+                            = s162f(audio_handle.buff_rx_[1][offset + i + 1]);
                     }
                     if(chns > 4)
                     {
                         fin[4][i / 2]
-                            = s162f(audio_handle.buff_rx_[2][offset + i])
-                              * audio_handle.postgain_recip_;
+                            = s162f(audio_handle.buff_rx_[2][offset + i]);
                         fin[5][i / 2]
-                            = s162f(audio_handle.buff_rx_[2][offset + i + 1])
-                              * audio_handle.postgain_recip_;
+                            = s162f(audio_handle.buff_rx_[2][offset + i + 1]);
+#if 0
+                        fin[4][i / 2] = 0;
+                        fin[5][i / 2] = 0;
+#endif
                     }
 
 #endif
