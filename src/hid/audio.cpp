@@ -175,12 +175,16 @@ AudioHandle::Impl::Start(AudioHandle::AudioCallback callback)
                               nullptr);
 #endif
     }
+
     sai1_.StartDma(buff_rx_[0],
                    buff_tx_[0],
                    config_.blocksize * 2 * 2,
                    audio_handle.InternalCallback);
+                   
     callback_             = (void*)callback;
+
     interleaved_callback_ = nullptr;
+
     return Result::OK;
 }
 
