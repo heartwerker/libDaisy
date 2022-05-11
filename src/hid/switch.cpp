@@ -64,6 +64,13 @@ bool Switch::RisingEdge()
     bool rise = (state_ & 0x0F) == 0x07; // used to be state_ == 0x7f;
     if(rise)
         activity_time_ = System::GetNow();
+        
+    bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    if(fall)
+    {
+        holdTriggered  = false;
+    }
+
     return rise;
 }
 
@@ -72,6 +79,9 @@ bool Switch::FallingEdge()
 {
     bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
     if(fall)
+    {
+        holdTriggered  = false;
         activity_time_ = System::GetNow();
+    }
     return fall;
 }
