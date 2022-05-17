@@ -365,17 +365,19 @@ SaiHandle::Impl::StartDmaTransfer_DualAB(int32_t*                buffer_rx,
     if(config_.a_sync == Config::Sync::SLAVE)
     {
 #if 1
-        config_.a_dir == Config::Direction::RECEIVE
-            ? status
-              = HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buff_rx_, size)
-            : status
-              = HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buff_tx_, size);
-              
-        config_.b_dir == Config::Direction::RECEIVE
-            ? status
-              = HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buff_rx_2, size)
-            : status
-              = HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buff_tx_, size);
+        if(config_.a_dir == Config::Direction::RECEIVE)
+            status
+                = HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buff_rx_, size);
+        else
+            status = HAL_SAI_Transmit_DMA(
+                &sai_a_handle_, (uint8_t*)buff_tx_, size);
+
+        if(config_.b_dir == Config::Direction::RECEIVE)
+            status = HAL_SAI_Receive_DMA(
+                &sai_b_handle_, (uint8_t*)buff_rx_2, size);
+        else
+            status = HAL_SAI_Transmit_DMA(
+                &sai_b_handle_, (uint8_t*)buff_tx_, size);
 #else
         status = HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buff_rx_, size);
         status = HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buff_rx_2, size);
