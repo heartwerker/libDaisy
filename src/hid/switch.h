@@ -100,6 +100,8 @@ class Switch
     */
     inline void SetUpdateRate(float update_rate) {}
 
+public:
+bool holdTriggered = false;
 
   private:
     uint32_t last_update_;
