@@ -14,7 +14,7 @@ using namespace daisy;
 #define SEED_TEST_POINT_PIN 14
 
 #ifndef SEED_REV2
-const dsy_gpio_pin seedgpio[31] = {
+const dsy_gpio_pin seedgpio[32] = {
     // GPIO 1-8
     //{DSY_GPIOA, 8}, // removed on Rev4
     {DSY_GPIOB, 12},
@@ -25,7 +25,7 @@ const dsy_gpio_pin seedgpio[31] = {
     {DSY_GPIOD, 2},
     {DSY_GPIOC, 12},
     // GPIO 9-16
-    {DSY_GPIOG, 10},
+    {DSY_GPIOG, 10}, // 7
     {DSY_GPIOG, 11},
     {DSY_GPIOB, 4}, // 9
     {DSY_GPIOB, 5}, // 10
@@ -51,6 +51,7 @@ const dsy_gpio_pin seedgpio[31] = {
     {DSY_GPIOA, 2},
     {DSY_GPIOB, 14},
     {DSY_GPIOB, 15},
+    {DSY_GPIOC, 2}, // 31
 };
 #else
 const dsy_gpio_port seed_ports[32] = {
