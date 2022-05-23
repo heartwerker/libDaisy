@@ -34,7 +34,7 @@ const dsy_gpio_pin seedgpio[32] = {
     {DSY_GPIOB, 6}, // 13 = TIM4_CH1
     {DSY_GPIOB, 7}, // 14 = TIM4_CH2
     // GPIO 17-24
-    {DSY_GPIOC, 0},
+    {DSY_GPIOC, 0}, // 15
     {DSY_GPIOA, 3},
     {DSY_GPIOB, 1},
     {DSY_GPIOA, 7},
@@ -43,12 +43,12 @@ const dsy_gpio_pin seedgpio[32] = {
     {DSY_GPIOC, 4},
     {DSY_GPIOA, 5},
     // GPIO 17-24
-    {DSY_GPIOA, 4},
+    {DSY_GPIOA, 4}, // 23
     {DSY_GPIOA, 1},
     {DSY_GPIOA, 0},
     {DSY_GPIOD, 11},
     {DSY_GPIOG, 9},
-    {DSY_GPIOA, 2},
+    {DSY_GPIOA, 2}, // 28
     {DSY_GPIOB, 14},
     {DSY_GPIOB, 15},
     {DSY_GPIOC, 2}, // 31
@@ -98,6 +98,7 @@ void DaisySeed::Init(bool boost)
 {
     //dsy_system_init();
     System::Config syscfg;
+
     boost ? syscfg.Boost() : syscfg.Defaults();
 
     ConfigureQspi();
