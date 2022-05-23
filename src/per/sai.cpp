@@ -183,6 +183,8 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
             break;
         default: break;
     }
+    
+    protocol = config.proto;
 
     // Generic Inits that we don't have API control over.
     // A

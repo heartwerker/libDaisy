@@ -94,6 +94,7 @@ class SaiHandle
             dsy_gpio_pin mclk, fs, sck, sa, sb;
         } pin_config;
         SampleRate sr;
+        uint32_t proto;
         BitDepth   bit_depth;
         Sync       a_sync, b_sync;
         Direction  a_dir, b_dir;
