@@ -130,9 +130,10 @@ AudioHandle::Result AudioHandle::Impl::Init(const AudioHandle::Config config,
     this->Init(config, sai1);
     sai2_       = sai2;
     buff_rx_[1] = dsy_audio_rx_buffer[1];
+    buff_rx_[2] = dsy_audio_rx_buffer[2];
+
     buff_tx_[1] = dsy_audio_tx_buffer[1];
     
-    buff_rx_[2] = dsy_audio_rx_buffer[2];
     // How do we want to handle the rx/tx buffs for the second peripheral of audio..?
     return Result::OK;
 }
@@ -357,9 +358,10 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
         // offset needed for 2nd audio codec.
         size_t offset    = audio_handle.sai2_.GetOffset();
         volatile size_t buff_size = chns > 4 ? size * 3 : (chns > 2 ? size * 2 : size);
-        float  finbuff[buff_size], foutbuff[buff_size];
-        float* fin[chns];
-        float* fout[chns];
+
+        float  finbuff[buff_size], foutbuff[buff_size]; // buffer for passing data to AudioCallback data
+        float* fin[chns];  // pointer to outputs
+        float* fout[chns]; // pointer to outputs
         fin[0]  = finbuff;
         fin[1]  = finbuff + (buff_size / chns);
         fout[0] = foutbuff;
@@ -402,8 +404,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                 for(size_t i = 0; i < size; i += 2)
                 {
                     fin[0][i / 2] = s242f(in[i]) * audio_handle.postgain_recip_;
-                    fin[1][i / 2]
-                        = s242f(in[i + 1]) * audio_handle.postgain_recip_;
+                    fin[1][i / 2] = s242f(in[i + 1]) * audio_handle.postgain_recip_;
 #if 0
                     if(chns > 2)
                     {
