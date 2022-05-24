@@ -165,9 +165,14 @@ AudioHandle::Impl::Start(AudioHandle::AudioCallback callback)
     if(sai2_.IsInitialized())
     {
 // Start stream with no callback. Data will be filled externally.
-#if 0
-        sai2_.StartDma(
-            buff_rx_[1], buff_tx_[1], config_.blocksize * 2 * 2, nullptr);
+#if 1
+        if(SaiHandle::Result::OK
+           != sai2_.StartDma(
+               buff_rx_[1], buff_tx_[1], config_.blocksize * 2 * 2, nullptr))
+        {
+            return AudioHandle::Result::ERR;
+        }
+
 #else
         sai2_.StartDma_DualAB(buff_rx_[1],
                               buff_rx_[2],
@@ -177,11 +182,15 @@ AudioHandle::Impl::Start(AudioHandle::AudioCallback callback)
 #endif
     }
 
-    sai1_.StartDma(buff_rx_[0],
-                   buff_tx_[0],
-                   config_.blocksize * 2 * 2,
-                   audio_handle.InternalCallback);
-                   
+    if(SaiHandle::Result::OK
+       != sai1_.StartDma(buff_rx_[0],
+                         buff_tx_[0],
+                         config_.blocksize * 2 * 2,
+                         audio_handle.InternalCallback))
+    {
+        return AudioHandle::Result::ERR;
+    }
+
     callback_             = (void*)callback;
 
     interleaved_callback_ = nullptr;
