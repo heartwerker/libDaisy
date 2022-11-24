@@ -90,9 +90,14 @@ class Switch
     {
         return Pressed() ? System::GetNow() - rising_edge_time_ : 0;
     }
+
+    /** \return true if the button has been held for more than time */
+    bool wasHoldForMs(int time);
+
+    /** \return the time in milliseconds since rise */
     inline float sinceRiseMs() const
     {
-        return  System::GetNow() - rising_edge_time_;
+        return System::GetNow() - rising_edge_time_;
     }
 
     /** Left for backwards compatability until next breaking change
@@ -100,8 +105,8 @@ class Switch
     */
     inline void SetUpdateRate(float update_rate) {}
 
-public:
-bool holdTriggered = false;
+  public:
+    bool holdWasTriggered = false;
 
   private:
     uint32_t last_update_;

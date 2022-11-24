@@ -68,7 +68,7 @@ bool Switch::RisingEdge()
     bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
     if(fall)
     {
-        holdTriggered  = false;
+        holdWasTriggered  = false;
     }
 
     return rise;
@@ -80,8 +80,21 @@ bool Switch::FallingEdge()
     bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
     if(fall)
     {
-        holdTriggered  = false;
+        holdWasTriggered  = false;
         activity_time_ = System::GetNow();
     }
     return fall;
+}
+bool Switch::wasHoldForMs(int time)
+{
+    if(!holdWasTriggered)
+    {
+        if(TimeHeldMs() > time)
+        {
+            holdWasTriggered = true;
+            return true;
+        }
+    }
+    
+    return false;
 }
