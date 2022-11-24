@@ -407,6 +407,15 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                             = s162f(audio_handle.buff_rx_[1][offset + i + 1])
                               * audio_handle.postgain_recip_;
                     }
+                    if(chns > 4)
+                    {
+                        fin[4][i / 2]
+                            = s162f(audio_handle.buff_rx_[2][offset + i])
+                              * audio_handle.postgain_recip_;
+                        fin[5][i / 2]
+                            = s162f(audio_handle.buff_rx_[2][offset + i + 1])
+                              * audio_handle.postgain_recip_;
+                    }
                 }
                 break;
             case SaiHandle::Config::BitDepth::SAI_24BIT:
