@@ -23,11 +23,6 @@ usbh/usbh_conf
 CPP_MODULES = \
 daisy_seed \
 daisy_pod \
-daisy_patch \
-daisy_petal \
-daisy_field \
-daisy_versio \
-daisy_patch_sm \
 sys/fatfs \
 sys/system \
 dev/sr_595 \
