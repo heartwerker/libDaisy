@@ -85,11 +85,11 @@ bool Switch::FallingEdge()
     }
     return fall;
 }
-bool Switch::wasHoldForMs(int time)
+bool Switch::holdFor(int time_ms)
 {
     if(!holdWasTriggered)
     {
-        if(TimeHeldMs() > time)
+        if(TimeHeldMs() > time_ms)
         {
             holdWasTriggered = true;
             return true;

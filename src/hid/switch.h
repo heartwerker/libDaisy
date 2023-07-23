@@ -92,7 +92,7 @@ class Switch
     }
 
     /** \return true if the button has been held for more than time */
-    bool wasHoldForMs(int time);
+    bool holdFor(int time);
 
     /** \return the time in milliseconds since rise */
     inline float sinceRiseMs() const
