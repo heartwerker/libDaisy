@@ -55,8 +55,8 @@ class OledDisplay : public OneBitGraphicsDisplayImpl<OledDisplay<DisplayDriver>>
     */
     void Update() override { driver_.Update(); }
 
-  private:
     DisplayDriver driver_;
+  private:
 
     void Reset() { driver_.Reset(); };
     void SendCommand(uint8_t cmd) { driver_.SendCommand(cmd); };
