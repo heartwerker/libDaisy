@@ -50,3 +50,55 @@ void Switch::Debounce()
             rising_edge_time_ = System::GetNow();
     }
 }
+
+void Switch::processDebounce(bool value)
+{
+    // shift over, and introduce new state.
+    state_ = (state_ << 1) | value;
+    
+    // Set time at which button was pressed
+    if(state_ == 0x7f)
+        rising_edge_time_ = System::GetNow();
+}
+
+
+/** \return true if a button was just pressed. */
+bool Switch::RisingEdge()
+{
+    bool rise = (state_ & 0x0F) == 0x07; // used to be state_ == 0x7f;
+    if(rise)
+        activity_time_ = System::GetNow();
+        
+    bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    if(fall)
+    {
+        holdWasTriggered  = false;
+    }
+
+    return rise;
+}
+
+/** \return true if the button was just released */
+bool Switch::FallingEdge()
+{
+    bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    if(fall)
+    {
+        holdWasTriggered  = false;
+        activity_time_ = System::GetNow();
+    }
+    return fall;
+}
+bool Switch::holdFor(int time_ms)
+{
+    if(!holdWasTriggered)
+    {
+        if(TimeHeldMs() > time_ms)
+        {
+            holdWasTriggered = true;
+            return true;
+        }
+    }
+    
+    return false;
+}

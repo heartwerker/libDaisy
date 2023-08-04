@@ -65,15 +65,16 @@ class Switch
     be made at the same rate as the debounce function is being called.
     */
     void Debounce();
+    void processDebounce(bool value);
+
+    float        activity_time_;
+    inline float sinceActivity() { return System::GetNow() - activity_time_; }
 
     /** \return true if a button was just pressed. */
-    inline bool RisingEdge() const { return updated_ ? state_ == 0x7f : false; }
+    bool RisingEdge();
 
     /** \return true if the button was just released */
-    inline bool FallingEdge() const
-    {
-        return updated_ ? state_ == 0x80 : false;
-    }
+    bool FallingEdge();
 
     /** \return true if the button is held down (or if the toggle is on) */
     inline bool Pressed() const { return state_ == 0xff; }
@@ -90,10 +91,22 @@ class Switch
         return Pressed() ? System::GetNow() - rising_edge_time_ : 0;
     }
 
+    /** \return true if the button has been held for more than time */
+    bool holdFor(int time);
+
+    /** \return the time in milliseconds since rise */
+    inline float sinceRiseMs() const
+    {
+        return System::GetNow() - rising_edge_time_;
+    }
+
     /** Left for backwards compatability until next breaking change
      * \param update_rate Doesn't do anything
     */
     inline void SetUpdateRate(float update_rate) {}
+
+  public:
+    bool holdWasTriggered = false;
 
   private:
     uint32_t last_update_;
