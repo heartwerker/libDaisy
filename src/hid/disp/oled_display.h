@@ -44,6 +44,11 @@ class OledDisplay : public OneBitGraphicsDisplayImpl<OledDisplay<DisplayDriver>>
         driver_.DrawPixel(x, y, on);
     }
 
+    void inputShiftRegisters(uint8_t *rxBuffer, uint8_t size) override
+    {
+      driver_.inputShiftRegisters(rxBuffer, size);
+    }
+
     /** 
     Writes the current display buffer to the OLED device using SPI or I2C depending on 
     how the object was initialized.

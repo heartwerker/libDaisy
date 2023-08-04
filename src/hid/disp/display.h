@@ -48,6 +48,9 @@ class OneBitGraphicsDisplay
     */
     virtual void DrawPixel(uint_fast8_t x, uint_fast8_t y, bool on) = 0;
 
+
+    virtual void inputShiftRegisters(uint8_t *rxBuffer, uint8_t size) = 0;
+
     /**
     Draws a line from (x1, y1) to (y1, y2)
     \param x1  x Coordinate of the starting point
