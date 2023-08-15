@@ -149,7 +149,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
                                                           : SAI_MODESLAVE_RX;
         sai_b_handle_.Init.Synchro = SAI_SYNCHRONOUS;
     }
-    // Bitdepth / protocol (currently based on bitdepth..)
+    // Bitdepth / protocol (currently based on .bit_depth)
     // TODO probably split these up for better flexibility..
     // These are also currently fixed to be the same per block.
     uint8_t  bd;
@@ -189,13 +189,26 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     sai_b_handle_.Init.MonoStereoMode = SAI_STEREOMODE;
     sai_b_handle_.Init.CompandingMode = SAI_NOCOMPANDING;
     sai_b_handle_.Init.TriState       = SAI_OUTPUT_NOTRELEASED;
-    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, 2) != HAL_OK)
+
+    // TDM
+    int nSlots = 2;
+    if (config.tdm_channel > 0)
+    {
+        if(bd == SAI_PROTOCOL_DATASIZE_16BIT)
+            protocol = SAI_PCM_SHORT;
+        else
+            protocol = SAI_PCM_LONG; // TODO untested!
+        
+        nSlots = config.tdm_channel;
+    }
+
+    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nSlots) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
     }
 
-    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, 2) != HAL_OK)
+    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nSlots) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
