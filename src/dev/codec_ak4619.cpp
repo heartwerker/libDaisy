@@ -1,39 +1,38 @@
 #include "dev/codec_ak4619.h"
 #include "sys/system.h"
 
-// TODO:
-// *
+#define I2C_ADDR 0x20 // I2C slave address (0x10<<1) and RW bit (W=0)
 
 // Datasheet: 9.14. Register Map
 
-#define I2C_ADDR 0x20 // I2C slave address (0x10<<1) and RW bit (W=0)
-
-const uint8_t config[] = {
-    0x37, // 0x00 Power Management
-    0xAC, // 0x01 Audio I/F Format
-    0x1C, // 0x02 Audio I/F Format
-    0x04, // 0x03 System Clock Setting
-    0x22, // 0x04 MIC AMP Gain
-    0x22, // 0x05 MIC AMP Gain
-    0x30, // 0x06 ADC1 Lch Digital Volume
-    0x30, // 0x07 ADC1 Rch Digital Volume
-    0x30, // 0x08 ADC2 Lch Digital Volume
-    0x30, // 0x09 ADC2 Rch Digital Volume
-    0x22, // 0x0A ADC Digital Filter Setting
-    0x55, // 0x0B ADC Analog Input Setting
-    0x00, // 0x0C Reserved
-    0x06, // 0x0D ADC Mute & HPF Control
-    0x18, // 0x0E DAC1 Lch Digital Volume
-    0x18, // 0x0F DAC1 Rch Digital Volume
-    0x18, // 0x10 DAC2 Lch Digital Volume
-    0x18, // 0x11 DAC2 Rch Digital Volume
-    0x04, // 0x12 DAC Input Select Setting
-    0x05, // 0x13 DAC De-Emphasis Setting
-    0x0A  // 0x14 DAC Mute & Filter Setting
+#define NUM_REG 21
+const uint8_t config[NUM_REG] = {
+    0x37, // 0b.0011.0111 - 0x00 Power Management (all Normal Operation) // TODO: only release reset State (D0 = 1) at end of setup?!
+    0xAC, // 0b.1010.1100 - 0x01 Audio I/F Format (TDM256 mode I2S compatible, Figure 19, DSL=11=32-BIT)
+    0x1C, // 0b.0001.1100 - 0x02 Reset Control =~ Audio I/F Format 2 (DIDL=11=32-Bit, DODL=00=24-Bit
+    0x04, // 0b.0000.0100 - 0x03 System Clock Setting (FS=100 = 192kHz)
+    0x22, // 0b.0010.0010 - 0x04 MIC AMP Gain (0010 = 0dB, 0010 = 0dB) 
+    0x22, // 0b.0010.0010 - 0x05 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
+    0x30, // 0b.0011.0000 - 0x06 ADC1 Lch Digital Volume (0011 = 0dB) 
+    0x30, // 0b.0011.0000 - 0x07 ADC1 Rch Digital Volume (0011 = 0dB) 
+    0x30, // 0b.0011.0000 - 0x08 ADC2 Lch Digital Volume (0011 = 0dB) 
+    0x30, // 0b.0011.0000 - 0x09 ADC2 Rch Digital Volume (0011 = 0dB) 
+    0x22, // 0b.0010.0010 - 0x0A ADC Digital Filter Setting (both Short Delay Sharp Roll-Off Filter)
+    0x55, // 0b.0101.0101 - 0x0B ADC Analog Input Setting (all Single-Ended1 = AIN1L, AIN1R, AIN4L, AIN4R)
+    0x00, // 0b.0000.0000 - 0x0C Reserved
+    0x06, // 0b.0000.0110 - 0x0D ADC Mute & HPF Control (ADC1/2 Soft Mute Disable, ADC1/2 HPF = 1 = Disable) --> AD1HPFN: ADC1 DC Offset Cancel HPF 
+    0x18, // 0b.0001.1000 - 0x0E DAC1 Lch Digital Volume (0x18 = 0dB)
+    0x18, // 0b.0001.1000 - 0x0F DAC1 Rch Digital Volume (0x18 = 0dB)
+    0x18, // 0b.0001.1000 - 0x10 DAC2 Lch Digital Volume (0x18 = 0dB)
+    0x18, // 0b.0001.1000 - 0x11 DAC2 Rch Digital Volume (0x18 = 0dB)
+    0x04, // 0b.0000.0100 - 0x12 DAC Input Select Setting (DAC1 = SDIN1, DAC2=SDIN2) (can be used to route audio from ADC directly to DAC)
+    0x05, // 0b.0000.0101 - 0x13 DAC De-Emphasis Setting (off)
+    0x0A  // 0b.0000.1010 - 0x14 DAC Mute & Filter Setting
 };
 
 #define LED_DRIVER_PC9635_ADDR \
     0x0A // I2C slave address (0x5<<1) and RW bit (W=0)
+
 
 const uint8_t led_reg_vals[] = {
     0x81, // MODE1
@@ -63,28 +62,6 @@ const uint8_t led_reg_vals[] = {
 };
 
 
-#define REG_POWER_MANAGEMENT 0x00           // 0x37
-#define REG_AUDIO_IF_FORMAT_1 0x01          // 0xAC
-#define REG_AUDIO_IF_FORMAT_2 0x02          // 0x1C
-#define REG_SYSTEM_CLOCK_SETTING 0x03       // 0x04
-#define REG_MIC_AMP_GAIN_1 0x04             // 0x22
-#define REG_MIC_AMP_GAIN_2 0x05             // 0x22
-#define REG_ADC1_LCH_DIGITAL_VOLUME 0x06    // 0x30
-#define REG_ADC1_RCH_DIGITAL_VOLUME 0x07    // 0x30
-#define REG_ADC2_LCH_DIGITAL_VOLUME 0x08    // 0x30
-#define REG_ADC2_RCH_DIGITAL_VOLUME 0x09    // 0x30
-#define REG_ADC_DIGITAL_FILTER_SETTING 0x0A // 0x22
-#define REG_ADC_ANALOG_INPUT_SETTING 0x0B   // 0x55
-#define REG_RESERVED 0x0C                   // 0x00
-#define REG_ADC_MUTE_HPF_CONTROL 0x0D       // 0x06
-#define REG_DAC1_LCH_DIGITAL_VOLUME 0x0E    // 0x18
-#define REG_DAC1_RCH_DIGITAL_VOLUME 0x0F    // 0x18
-#define REG_DAC2_LCH_DIGITAL_VOLUME 0x10    // 0x18
-#define REG_DAC2_RCH_DIGITAL_VOLUME 0x11    // 0x18
-#define REG_DAC_INPUT_SELECT_SETTING 0x12   // 0x04
-#define REG_DAC_DE_EMPHASIS_SETTING 0x13    // 0x05
-#define REG_DAC_MUTE_FILTER_SETTING 0x14    // 0x0A
-
 namespace daisy
 {
 AK4619::Result AK4619::Init(I2CHandle i2c)
@@ -94,7 +71,7 @@ AK4619::Result AK4619::Init(I2CHandle i2c)
     // Reset the codec (though by default we may not need to do this)
     uint8_t sysreg = 0x00;
 
-    for(int i = 0; i <= REG_DAC_MUTE_FILTER_SETTING; i++)
+    for(int i = 0; i <= NUM_REG; i++)
     {
         if(WriteRegister(i, config[i]) != Result::OK)
             return Result::ERR;
