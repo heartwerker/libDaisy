@@ -41,4 +41,4 @@ class AK4619
 };
 
 } // namespace daisy
-#endif // DSY_CODEC_AK4619_H
+#endif

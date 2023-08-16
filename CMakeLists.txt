@@ -37,6 +37,7 @@ add_library(${TARGET} STATIC
     ${MODULE_DIR}/sys/system.cpp
     ${MODULE_DIR}/dev/sr_595.cpp
     ${MODULE_DIR}/dev/codec_ak4556.cpp
+    ${MODULE_DIR}/dev/codec_ak4619.cpp
     ${MODULE_DIR}/dev/codec_pcm3060.cpp
     ${MODULE_DIR}/dev/codec_wm8731.cpp
     ${MODULE_DIR}/dev/lcd_hd44780.cpp
