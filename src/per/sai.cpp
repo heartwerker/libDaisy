@@ -195,11 +195,10 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
     if (config.tdm_channel > 0)
     {
-        if(bd == SAI_PROTOCOL_DATASIZE_16BIT)
-            protocol = SAI_PCM_SHORT;
-        else
-            protocol = SAI_PCM_LONG; // TODO untested!
-        
+        // overwrite:
+        bd = SAI_PROTOCOL_DATASIZE_32BIT;
+        protocol = SAI_PCM_SHORT;
+
         nSlots = config.tdm_channel;
     }
 
