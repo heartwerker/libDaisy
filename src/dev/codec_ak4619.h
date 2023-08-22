@@ -28,7 +28,6 @@ class AK4619
      * \param i2c Initialized I2CHandle configured at 400kHz or less
      */
     Result Init(I2CHandle i2c);
-
   private:
     /** Reads the data byte corresponding to the register address */
     Result ReadRegister(uint8_t addr, uint8_t *data);
