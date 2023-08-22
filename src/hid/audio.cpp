@@ -419,10 +419,10 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s24(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
-                        out2[i * 4 + 0] = f2s24(fout[2][i] * gain_adjust);
-                        out2[i * 4 + 1] = f2s24(fout[3][i] * gain_adjust);
-                        out2[i * 4 + 2] = f2s24(fout[4][i] * gain_adjust);
-                        out2[i * 4 + 3] = f2s24(fout[5][i] * gain_adjust);
+                        out2[i * 4 + 0] = f2s24(fout[2][i] * gain_adjust) << 8;
+                        out2[i * 4 + 1] = f2s24(fout[3][i] * gain_adjust) << 8;
+                        out2[i * 4 + 2] = f2s24(fout[4][i] * gain_adjust) << 8;
+                        out2[i * 4 + 3] = f2s24(fout[5][i] * gain_adjust) << 8;
                     }
                     else if(chns > 2)
                     {
