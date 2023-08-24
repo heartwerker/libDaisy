@@ -347,19 +347,19 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                 {
                     fin[0][i] = s242f(in[i * 2 + 0]) * gain_recip;
                     fin[1][i] = s242f(in[i * 2 + 1]) * gain_recip;
-                    if (chns > 4) // TDM
+                    if(chns > 4) // TDM
                     {
-                        #if 0
+#if 0
                         fin[2][i] = s242f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s242f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s242f(in2[i * 4 + 2]) * gain_recip;
                         fin[5][i] = s242f(in2[i * 4 + 3]) * gain_recip;
-                        #else
+#else
                         fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
                         fin[5][i] = s322f(in2[i * 4 + 3]) * gain_recip;
-                        #endif
+#endif
                     }
                     else if(chns > 2)
                     {
@@ -434,33 +434,11 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                         out2[i * 4 + 1] = f2s24(fout[3][i] * gain_adjust) << 8;
                         out2[i * 4 + 2] = f2s24(fout[4][i] * gain_adjust) << 8;
                         out2[i * 4 + 3] = f2s24(fout[5][i] * gain_adjust) << 8;
-                        #elif 0
-                        out2[i * 4 + 0] = f2s24(fout[2][i] * gain_adjust) << 5;
-                        out2[i * 4 + 1] = f2s24(fout[3][i] * gain_adjust) << 6;
-                        out2[i * 4 + 2] = f2s24(fout[4][i] * gain_adjust) << 7;
-                        out2[i * 4 + 3] = f2s24(fout[5][i] * gain_adjust) << 8;
                         #else
-
                         out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
                         out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
                         out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
-
-#if 0
-                        if (flip)
-                            out2[i * 4 + 0] = 0xAAAAAAAA;
-                        else
-                            out2[i * 4 + 0] = 0x55555555;
-                            #endif
-                            #if 0
-                        if (flip)
-                            out2[i * 4 + 0] = 176;
-                        else
-                            out2[i * 4 + 0] = -176;
-                        out2[i * 4 + 0] = out2[i * 4 + 0] << 8;
-
-#endif
-
 
 #if 0 // shift all by 1 bit
                         for (int ch = 0; ch <4; ch++)
