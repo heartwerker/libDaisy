@@ -96,6 +96,7 @@ class SaiHandle
         BitDepth   bit_depth;
         Sync       a_sync, b_sync;
         Direction  a_dir, b_dir;
+        size_t tdm_channel = 0; // default 0 = no TDM
     };
 
     /** Return values for SAI functions */
@@ -128,11 +129,11 @@ class SaiHandle
 
     /** Starts Rx and Tx in Circular Buffer Mode 
      ** The callback will be called when half of the buffer is ready, 
-     ** and will handle size/2 samples per callback.
+     ** and will handle block_size/2 samples per callback.
      */
     Result StartDma(int32_t*            buffer_rx,
                     int32_t*            buffer_tx,
-                    size_t              size,
+                    size_t              block_size,
                     CallbackFunctionPtr callback);
 
     /** Stops the DMA stream for the SAI blocks in use. */

@@ -243,6 +243,7 @@
     <ClCompile Include="src\daisy_versio.cpp" />
     <ClCompile Include="src\daisy_legio.cpp" />
     <ClCompile Include="src\dev\codec_ak4556.cpp" />
+    <ClCompile Include="src\dev\codec_ak4619.cpp" />
     <ClCompile Include="src\dev\codec_pcm3060.cpp" />
     <ClCompile Include="src\dev\codec_wm8731.cpp" />
     <ClCompile Include="src\dev\sdram.c" />
@@ -439,6 +440,7 @@
     <ClInclude Include="src\daisy_versio.h" />
     <ClInclude Include="src\daisy_legio.h" />
     <ClInclude Include="src\dev\codec_ak4556.h" />
+    <ClInclude Include="src\dev\codec_ak4619.h" />
     <ClInclude Include="src\dev\codec_pcm3060.h" />
     <ClInclude Include="src\dev\codec_wm8731.h" />
     <ClInclude Include="src\dev\flash_IS25LP064A.h" />

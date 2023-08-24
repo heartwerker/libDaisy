@@ -22,7 +22,7 @@ class SaiHandle::Impl
 
     SaiHandle::Result StartDmaTransfer(int32_t*                       buffer_rx,
                                        int32_t*                       buffer_tx,
-                                       size_t                         size,
+                                       size_t                         block_size,
                                        SaiHandle::CallbackFunctionPtr callback);
     SaiHandle::Result StopDmaTransfer();
 
@@ -40,7 +40,7 @@ class SaiHandle::Impl
     size_t                         buff_size_;
     SaiHandle::CallbackFunctionPtr callback_;
 
-    /** Offset stored for weird inter-SAI stuff.*/
+    /** Offset stored for weird inter-SAI stuff -> accessing the correct buffer from InternalCallback */
     size_t dma_offset;
 
     /** Callback that dispatches user callback from Cplt and HalfCplt DMA Callbacks */
@@ -149,7 +149,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
                                                           : SAI_MODESLAVE_RX;
         sai_b_handle_.Init.Synchro = SAI_SYNCHRONOUS;
     }
-    // Bitdepth / protocol (currently based on bitdepth..)
+    // Bitdepth / protocol (currently based on .bit_depth)
     // TODO probably split these up for better flexibility..
     // These are also currently fixed to be the same per block.
     uint8_t  bd;
@@ -189,13 +189,26 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     sai_b_handle_.Init.MonoStereoMode = SAI_STEREOMODE;
     sai_b_handle_.Init.CompandingMode = SAI_NOCOMPANDING;
     sai_b_handle_.Init.TriState       = SAI_OUTPUT_NOTRELEASED;
-    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, 2) != HAL_OK)
+
+    // TDM
+    int nSlots = 2;
+
+    if (config.tdm_channel > 0)
+    {
+        // overwrite:
+        bd = SAI_PROTOCOL_DATASIZE_32BIT;
+        protocol = SAI_PCM_SHORT;
+
+        nSlots = config.tdm_channel;
+    }
+
+    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nSlots) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
     }
 
-    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, 2) != HAL_OK)
+    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nSlots) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
@@ -304,32 +317,36 @@ void SaiHandle::Impl::InternalCallback(size_t offset)
 SaiHandle::Result
 SaiHandle::Impl::StartDmaTransfer(int32_t*                       buffer_rx,
                                   int32_t*                       buffer_tx,
-                                  size_t                         size,
+                                  size_t                         block_size,
                                   SaiHandle::CallbackFunctionPtr callback)
 {
     buff_rx_   = buffer_rx;
     buff_tx_   = buffer_tx;
-    buff_size_ = size;
+
+    size_t tdm_channel = GetConfig().tdm_channel;
+    size_t num_channel = tdm_channel > 0 ? tdm_channel : 2;
+
+    buff_size_ = block_size * 2 * num_channel ; 
     callback_  = callback;
 
     // This assumes there will be one master and one slave
     if(config_.a_sync == Config::Sync::SLAVE)
     {
         config_.a_dir == Config::Direction::RECEIVE
-            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, size)
-            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, size);
+            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, buff_size_)
+            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, buff_size_);
         config_.b_dir == Config::Direction::RECEIVE
-            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx, size)
-            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, size);
+            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx, buff_size_)
+            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, buff_size_);
     }
     else
     {
         config_.b_dir == Config::Direction::RECEIVE
-            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx, size)
-            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, size);
+            ? HAL_SAI_Receive_DMA(&sai_b_handle_, (uint8_t*)buffer_rx, buff_size_)
+            : HAL_SAI_Transmit_DMA(&sai_b_handle_, (uint8_t*)buffer_tx, buff_size_);
         config_.a_dir == Config::Direction::RECEIVE
-            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, size)
-            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, size);
+            ? HAL_SAI_Receive_DMA(&sai_a_handle_, (uint8_t*)buffer_rx, buff_size_)
+            : HAL_SAI_Transmit_DMA(&sai_a_handle_, (uint8_t*)buffer_tx, buff_size_);
     }
 
     return Result::OK;
@@ -556,10 +573,10 @@ const SaiHandle::Config& SaiHandle::GetConfig() const
 
 SaiHandle::Result SaiHandle::StartDma(int32_t*            buffer_rx,
                                       int32_t*            buffer_tx,
-                                      size_t              size,
+                                      size_t              block_size,
                                       CallbackFunctionPtr callback)
 {
-    return pimpl_->StartDmaTransfer(buffer_rx, buffer_tx, size, callback);
+    return pimpl_->StartDmaTransfer(buffer_rx, buffer_tx, block_size, callback);
 }
 
 SaiHandle::Result SaiHandle::StopDma()

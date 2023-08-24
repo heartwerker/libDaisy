@@ -33,6 +33,7 @@ sys/fatfs \
 sys/system \
 dev/sr_595 \
 dev/codec_ak4556 \
+dev/codec_ak4619 \
 dev/codec_pcm3060 \
 dev/codec_wm8731 \
 dev/lcd_hd44780 \
