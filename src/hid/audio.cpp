@@ -11,7 +11,7 @@ namespace daisy
 // these buffers will always be present, and usable.
 //
 static const size_t kAudioMaxBufferSize = 1024;
-static const size_t kAudioMaxChannels   = 4;
+static const size_t kAudioMaxChannels   = 6;
 
 // Static Global Buffers
 // 8kB in SRAM1, non-cached memory
