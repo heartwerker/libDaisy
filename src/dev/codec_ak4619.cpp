@@ -8,8 +8,8 @@
 #define NUM_REG 21
 const uint8_t config[NUM_REG] = {
     0x37, // 0b.0011.0111 - 0x00 Power Management (all Normal Operation) // TODO: only release reset State (D0 = 1) at end of setup?!
- // 0xAC, // 0b.1010.1100 - 0x01 Audio I/F Format (TDM256 mode I2S compatible, Figure 19, DCF=010=, DSL=11=32bit, BCKP=0=Falling with LRCK, SDOPH=0=Slow)
-    0xAE, // 0b.1010.1110 - 0x01 Audio I/F Format (TDM256 mode I2S compatible, Figure 18, DCF=010=, DSL=11=32bit, BCKP=1=Rising  with LRCK, SDOPH=0=Slow)
+ // 0xAC, // 0b.1010.1100 - 0x01 Audio I/F Format (TDM256 mode I2S compatible, Figure 19, DCF=010, DSL=11=32bit, BCKP=0=Falling with LRCK, SDOPH=0=Slow)
+    0xAE, // 0b.1111.1110 - 0x01 Audio I/F Format (TDM128 mode MSB justified, Figure 18, DCF=111, DSL=11=32bit, BCKP=1=Rising  with LRCK, SDOPH=0=Slow)
     0x1C, // 0b.0001.1100 - 0x02 Reset Control =~ Audio I/F Format 2 (DIDL=11=32-Bit, DODL=00=24-Bit
  // 0x04, // 0b.0000.0100 - 0x03 System Clock Setting (FS=100 = 192kHz)
     0x00, // 0b.0000.0000 - 0x03 System Clock Setting (FS=000 = MCLK=256*fs, BICK=128*fs, fs=48khz )
