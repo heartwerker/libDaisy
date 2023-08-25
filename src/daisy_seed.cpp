@@ -129,7 +129,8 @@ void DaisySeed::Init(bool boost)
         dsy_gpio_init(&testpoint);
         sdram_handle.Init();
     }
-
+    // disable the audio config here, because sometimes this causes the sai2 input to not be initialized?
+    // codec ADC output is then not working properly
    // ConfigureAudio();
 
     callback_rate_ = AudioSampleRate() / AudioBlockSize();
