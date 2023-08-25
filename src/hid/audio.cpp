@@ -396,9 +396,16 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 
         volatile float gain_adjust = audio_handle.output_adjust_;
         int32_t *out2 = audio_handle.buff_tx_[1] + offset;
-
+        
+        static uint32_t c = 0;
         static bool flip = true;
-        flip = !flip;
+
+        if (c++ >1500)
+        {
+            c = 0;
+            flip = !flip;
+        }
+//        flip = c==0;
 
         // Reinterleave and scale
         switch(bd)
@@ -440,7 +447,25 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
                         out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
 
-#if 0 // shift all by 1 bit
+#if 1
+                        int32_t hi = 0xAAAAAAAA;
+                        int32_t lo = 0x55555555;
+                        hi = f2s32(1);
+                        lo = f2s32(-1);
+
+#if 0
+#define HI_val 2147483648
+#define HI_vvv 1073741824
+                        hi = HI_val;
+                        hi = HI_vvv;
+                        lo = -hi;
+#endif
+                        out2[i * 4 + 0] = flip ? hi : lo;
+                        out2[i * 4 + 1] = flip ? lo : hi;
+                        out2[i * 4 + 3] = 0x00000000;
+#endif
+
+#if 1// shift all by 1 bit
                         for (int ch = 0; ch <4; ch++)
                             out2[i * 4 + ch] = out2[i * 4 + ch] >> 1;
 #endif
