@@ -130,7 +130,7 @@ void DaisySeed::Init(bool boost)
         sdram_handle.Init();
     }
 
-    ConfigureAudio();
+   // ConfigureAudio();
 
     callback_rate_ = AudioSampleRate() / AudioBlockSize();
     // Due to the added 16kB+ of flash usage,
