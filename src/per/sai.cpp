@@ -221,8 +221,13 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
     if(config.tdm_channel > 0)
     {
-         SAI_InitProtocolTDM(&sai_a_handle_, config.tdm_channel)  != HAL_OK)
-         {
+        if (SAI_InitProtocolTDM(&sai_a_handle_, config.tdm_channel)  != HAL_OK)
+        {
+            Error_Handler();
+            return Result::ERR;
+         }
+        if (SAI_InitProtocolTDM(&sai_b_handle_, config.tdm_channel)  != HAL_OK)
+        {
             Error_Handler();
             return Result::ERR;
          }
@@ -246,6 +251,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
     return Result::OK;
 }
+
 
 // copy from SAI_InitPCM
 HAL_StatusTypeDef SaiHandle::Impl::SAI_InitProtocolTDM(SAI_HandleTypeDef* hsai,
