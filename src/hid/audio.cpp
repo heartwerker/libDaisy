@@ -453,11 +453,11 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                         hi = f2s32(1);
                         lo = f2s32(-1);
 
-#if 0
-#define HI_val 2147483648
+#if 1
+#define HI_val 2147483648-1
 #define HI_vvv 1073741824
-                        hi = HI_val;
                         hi = HI_vvv;
+                        hi = HI_val;
                         lo = -hi;
 #endif
                         out2[i * 4 + 0] = flip ? hi : lo;
