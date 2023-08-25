@@ -445,7 +445,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 
         cb(fin, fout, size / 2);
 
-        volatile float gain_adjust = audio_handle.output_adjust_;
+        float gain_adjust = audio_handle.output_adjust_;
         int32_t *out2 = audio_handle.buff_tx_[1] + offset;
 
         // Reinterleave and scale
