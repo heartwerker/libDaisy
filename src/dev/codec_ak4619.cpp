@@ -4,21 +4,29 @@
 #define I2C_ADDR 0x20 // I2C slave address (0x10<<1) and RW bit (W=0)
 
 // Datasheet: 9.14. Register Map
-
+#define DISABLE_DC 0
+#define DISABLE_ADC_MIC_GAIN 0
 #define NUM_REG 21
 
 const uint8_t config[NUM_REG] = {
     0b00110111, // 0x00 Power Management (all Normal Operation)
-#if 1
-    0b10101100, // 0x01 Audio I/F Format (TDM=1, DCF=010=I2S compatible, DSL=11=32bit, BCKP=0=Falling with LRCK, SDOPH=0=Slow) >>> Figure 19
+#if 1 // this is more a work around .. bckp should be 1 because this is the reality of the clocks.. has to be changed in the future
+    0b10101100, // 0x01 Audio I/F Format (TDM=1, DCF=010=I2S compatible, DSL=11=32bit, BCKP=0=Falling with LRCK, SDOPH=0=Slow) >>> Figure 17
 #else
     0b11111110, // 0x01 Audio I/F Format (TDM=1, DCF=111=MSB justified,  DSL=11=32bit, BCKP=1=Rising  with LRCK, SDOPH=0=Slow) >>> Figure 18
 #endif
     0b00011100, // 0x02 Reset Control =~ Audio I/F Format 2 (SLOT=1, DIDL=11=32-Bit, DODL=00=24-Bit)
- // 0b00000100, // 0x03 System Clock Setting (FS=100 = 192kHz)
+                // 0b00000100, // 0x03 System Clock Setting (FS=100 = 192kHz)
     0b00000000, // 0x03 System Clock Setting (FS=000 = MCLK=256*fs, BICK=128*fs, fs=48khz )
+
+#if DISABLE_ADC_MIC_GAIN
     0b00100010, // 0x04 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
     0b00100010, // 0x05 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
+#else
+    0b00110011, // 0x04 MIC AMP Gain (0011 = 3dB.....)
+    0b00110011, // 0x05 MIC AMP Gain 
+#endif
+
     0b00110000, // 0x06 ADC1 Lch Digital Volume (0011 = 0dB)
     0b00110000, // 0x07 ADC1 Rch Digital Volume (0011 = 0dB)
     0b00110000, // 0x08 ADC2 Lch Digital Volume (0011 = 0dB)
@@ -26,7 +34,11 @@ const uint8_t config[NUM_REG] = {
     0b00100010, // 0x0A ADC Digital Filter Setting (both Short Delay Sharp Roll-Off Filter)
     0b01010101, // 0x0B ADC Analog Input Setting (all Single-Ended1 = AIN1L, AIN1R, AIN4L, AIN4R)
     0b00000000, // 0x0C Reserved
+#if DISABLE_DC
     0b00000110, // 0x0D ADC Mute & HPF Control (ADC1/2 Soft Mute Disable, ADC1/2 HPF = 1 = Disable) --> AD1HPFN: ADC1 DC Offset Cancel HPF
+#else
+    0b00000000, // 0x0D ADC Mute & HPF Control (ADC1/2 Soft Mute Disable, ADC1/2 HPF = 0 =  enable) --> AD1HPFN: ADC1 DC Offset Cancel HPF
+#endif
     0b00011000, // 0x0E DAC1 Lch Digital Volume (0x18 = 0dB)
     0b00011000, // 0x0F DAC1 Rch Digital Volume (0x18 = 0dB)
     0b00011000, // 0x10 DAC2 Lch Digital Volume (0x18 = 0dB)

@@ -317,6 +317,22 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
         size_t offset    = audio_handle.sai2_.GetOffset();
         int32_t *in2 = audio_handle.buff_rx_[1] + audio_handle.sai2_.GetOffset();
 
+        volatile int32_t inputs[4][32];
+
+        for(size_t i = 0; i < block_size; i++)
+        {
+            if(chns > 4) // TDM
+            {
+                for (int ch = 0; ch < 4; ch++)
+                    in2[i * 4 + ch] = in2[i * 4 + ch] << 2;
+
+                inputs[0][i] = in2[i * 4 + 0];
+                inputs[1][i] = in2[i * 4 + 1];
+                inputs[2][i] = in2[i * 4 + 2];
+                inputs[3][i] = in2[i * 4 + 3];
+            }
+        }
+
         float gain_recip = audio_handle.postgain_recip_;
         
         // TODO: handle different bd for sai interfaces
@@ -400,7 +416,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
         static uint32_t c = 0;
         static bool flip = true;
 
-        if (c++ >1500)
+        if (c++ > 1500)
         {
             c = 0;
             flip = !flip;
@@ -454,15 +470,15 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                         lo = f2s32(-1);
 
 #if 1
-#define HI_val 2147483648-1
-#define HI_vvv 1073741824
-                        hi = HI_vvv;
+#if 0
+#define HI_val 2147483648-1 
+#else
+#define HI_val (1073741824/16)-1
+#endif
                         hi = HI_val;
                         lo = -hi;
 #endif
                         out2[i * 4 + 0] = flip ? hi : lo;
-                        out2[i * 4 + 1] = flip ? lo : hi;
-                        out2[i * 4 + 3] = 0x00000000;
 #endif
 
 #if 1// shift all by 1 bit
