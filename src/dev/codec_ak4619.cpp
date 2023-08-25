@@ -3,11 +3,11 @@
 
 #define I2C_ADDR 0x20 // I2C slave address (0x10<<1) and RW bit (W=0)
 
-// Datasheet: 9.14. Register Map
-#define DISABLE_DC 0
+#define DISABLE_DC 1
 #define DISABLE_ADC_MIC_GAIN 0
-#define NUM_REG 21
 
+// Datasheet: 9.14. Register Map
+#define NUM_REG 21
 const uint8_t config[NUM_REG] = {
     0b00110111, // 0x00 Power Management (all Normal Operation)
 #if 1 // this is more a work around .. bckp should be 1 because this is the reality of the clocks.. has to be changed in the future
@@ -16,15 +16,19 @@ const uint8_t config[NUM_REG] = {
     0b11111110, // 0x01 Audio I/F Format (TDM=1, DCF=111=MSB justified,  DSL=11=32bit, BCKP=1=Rising  with LRCK, SDOPH=0=Slow) >>> Figure 18
 #endif
     0b00011100, // 0x02 Reset Control =~ Audio I/F Format 2 (SLOT=1, DIDL=11=32-Bit, DODL=00=24-Bit)
-                // 0b00000100, // 0x03 System Clock Setting (FS=100 = 192kHz)
     0b00000000, // 0x03 System Clock Setting (FS=000 = MCLK=256*fs, BICK=128*fs, fs=48khz )
 
 #if DISABLE_ADC_MIC_GAIN
     0b00100010, // 0x04 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
     0b00100010, // 0x05 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
 #else
+#if 0 // 3db
     0b00110011, // 0x04 MIC AMP Gain (0011 = 3dB.....)
-    0b00110011, // 0x05 MIC AMP Gain 
+    0b00110011, // 0x05 MIC AMP Gain
+#else // 6db
+    0b01000100, // 0x04 MIC AMP Gain (0100 = 6dB.....)
+    0b01000100, // 0x05 MIC AMP Gain
+#endif
 #endif
 
     0b00110000, // 0x06 ADC1 Lch Digital Volume (0011 = 0dB)

@@ -96,7 +96,7 @@ class SaiHandle
         BitDepth   bit_depth;
         Sync       a_sync, b_sync;
         Direction  a_dir, b_dir;
-        size_t tdm_channel = 0; // default 0 = no TDM
+        size_t tdm_slots = 0; // default 0 = no TDM
     };
 
     /** Return values for SAI functions */
