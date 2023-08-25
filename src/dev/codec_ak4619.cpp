@@ -14,8 +14,8 @@ const uint8_t config[NUM_REG] = {
 #else
     0b11111110, // 0x01 Audio I/F Format (TDM=1, DCF=111=MSB justified,  DSL=11=32bit, BCKP=1=Rising  with LRCK, SDOPH=0=Slow) >>> Figure 18
 #endif
-    0b00011100, // 0x02 Reset Control =~ Audio I/F Format 2 (DIDL=11=32-Bit, DODL=00=24-Bit
-                // 0b00000100, // 0x03 System Clock Setting (FS=100 = 192kHz)
+    0b00011100, // 0x02 Reset Control =~ Audio I/F Format 2 (SLOT=1, DIDL=11=32-Bit, DODL=00=24-Bit)
+ // 0b00000100, // 0x03 System Clock Setting (FS=100 = 192kHz)
     0b00000000, // 0x03 System Clock Setting (FS=000 = MCLK=256*fs, BICK=128*fs, fs=48khz )
     0b00100010, // 0x04 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)
     0b00100010, // 0x05 MIC AMP Gain (0010 = 0dB, 0010 = 0dB)

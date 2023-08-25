@@ -467,7 +467,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 
 #if 1// shift all by 1 bit
                         for (int ch = 0; ch <4; ch++)
-                            out2[i * 4 + ch] = out2[i * 4 + ch] >> 1;
+                            out2[i * 4 + ch] = (out2[i * 4 + ch] >> 1) & 0x7FFFFFFF;
 #endif
 
 #endif
