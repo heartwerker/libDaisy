@@ -20,6 +20,8 @@ class SaiHandle::Impl
     SaiHandle::Result        DeInit();
     const SaiHandle::Config& GetConfig() const { return config_; }
 
+    HAL_StatusTypeDef SAI_InitProtocolTDM(SAI_HandleTypeDef* hsai, uint32_t nbslot);
+
     SaiHandle::Result StartDmaTransfer(int32_t*                       buffer_rx,
                                        int32_t*                       buffer_tx,
                                        size_t                         block_size,
@@ -193,6 +195,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     // TDM
     int nSlots = 2;
 
+#if 0
     if (config.tdm_channel > 0)
     {
         // overwrite:
@@ -214,8 +217,108 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
         return Result::ERR;
     }
 
+#else
+
+    if(config.tdm_channel > 0)
+    {
+         SAI_InitProtocolTDM(&sai_a_handle_, config.tdm_channel)  != HAL_OK)
+         {
+            Error_Handler();
+            return Result::ERR;
+         }
+    }
+    else
+    {
+        if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nSlots) != HAL_OK)
+        {
+            Error_Handler();
+            return Result::ERR;
+        }
+
+        if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nSlots) != HAL_OK)
+        {
+            Error_Handler();
+            return Result::ERR;
+        }
+    }
+#endif
+
+
     return Result::OK;
 }
+
+// copy from SAI_InitPCM
+HAL_StatusTypeDef SaiHandle::Impl::SAI_InitProtocolTDM(SAI_HandleTypeDef* hsai,
+                                                       uint32_t nbslot)
+{
+    HAL_StatusTypeDef status = HAL_OK;
+    uint32_t datasize = SAI_PROTOCOL_DATASIZE_32BIT;
+    uint32_t protocol = SAI_PCM_SHORT;
+
+    /* Check the parameters */
+    assert_param(IS_SAI_SUPPORTED_PROTOCOL(protocol));
+    assert_param(IS_SAI_PROTOCOL_DATASIZE(datasize));
+
+    hsai->Init.Protocol = SAI_FREE_PROTOCOL;
+    hsai->Init.FirstBit = SAI_FIRSTBIT_MSB;
+    /* Compute ClockStrobing according AudioMode */
+    if((hsai->Init.AudioMode == SAI_MODEMASTER_TX)
+       || (hsai->Init.AudioMode == SAI_MODESLAVE_TX))
+    {
+        /* Transmit */
+        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_RISINGEDGE;
+    }
+    else
+    {
+        /* Receive */
+        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_FALLINGEDGE;
+    }
+    hsai->FrameInit.FSDefinition  = SAI_FS_STARTFRAME;
+    hsai->FrameInit.FSPolarity    = SAI_FS_ACTIVE_HIGH;
+    hsai->FrameInit.FSOffset      = SAI_FS_BEFOREFIRSTBIT;
+    hsai->SlotInit.FirstBitOffset = 0;
+    hsai->SlotInit.SlotNumber     = nbslot;
+    hsai->SlotInit.SlotActive     = SAI_SLOTACTIVE_ALL;
+
+    switch(protocol)
+    {
+        case SAI_PCM_SHORT: hsai->FrameInit.ActiveFrameLength = 1; break;
+        case SAI_PCM_LONG: hsai->FrameInit.ActiveFrameLength = 13; break;
+        default: status = HAL_ERROR; break;
+    }
+
+    switch(datasize)
+    {
+        case SAI_PROTOCOL_DATASIZE_16BIT:
+            hsai->Init.DataSize         = SAI_DATASIZE_16;
+            hsai->FrameInit.FrameLength = 16U * nbslot;
+            hsai->SlotInit.SlotSize     = SAI_SLOTSIZE_16B;
+            break;
+        case SAI_PROTOCOL_DATASIZE_16BITEXTENDED:
+            hsai->Init.DataSize         = SAI_DATASIZE_16;
+            hsai->FrameInit.FrameLength = 32U * nbslot;
+            hsai->SlotInit.SlotSize     = SAI_SLOTSIZE_32B;
+            break;
+        case SAI_PROTOCOL_DATASIZE_24BIT:
+            hsai->Init.DataSize         = SAI_DATASIZE_24;
+            hsai->FrameInit.FrameLength = 32U * nbslot;
+            hsai->SlotInit.SlotSize     = SAI_SLOTSIZE_32B;
+            break;
+        case SAI_PROTOCOL_DATASIZE_32BIT:
+            hsai->Init.DataSize         = SAI_DATASIZE_32;
+            hsai->FrameInit.FrameLength = 32U * nbslot;
+            hsai->SlotInit.SlotSize     = SAI_SLOTSIZE_32B;
+            break;
+        default: status = HAL_ERROR; break;
+    }
+    if(status == HAL_OK)
+    {
+        status = HAL_SAI_Init(hsai);
+    }
+
+    return status;
+}
+
 
 SaiHandle::Result SaiHandle::Impl::DeInit()
 {
