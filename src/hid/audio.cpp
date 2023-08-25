@@ -20,7 +20,7 @@ static const size_t kAudioMaxChannels   = 6; // leaves more space ... but TDM wi
 static int32_t DMA_BUFFER_MEM_SECTION
     dsy_audio_rx_buffer[kAudioMaxChannels / 2][kAudioMaxBufferSize];
 static int32_t DMA_BUFFER_MEM_SECTION
-    dsy_audio_tx_buffer[kAudioMaxChannels / 2][kAudioMaxBufferSize]; 
+    dsy_audio_tx_buffer[kAudioMaxChannels / 2][kAudioMaxBufferSize];
 
 // ================================================================
 // Private Implementation Definition
@@ -49,12 +49,8 @@ class AudioHandle::Impl
 
         if(sai2_.IsInitialized())
         {
-            int tdm_ch = sai2_.GetConfig().tdm_channel;
-
-            if(tdm_ch == 0)
-                ch += 2;
-            else
-                ch += tdm_ch;
+            size_t tdm_slots = sai2_.GetConfig().tdm_slots;
+            ch += tdm_slots > 0 ? tdm_slots : 2; // backwards compatible tdm_slots can be 0/unset
         }
         return ch;
     }
@@ -181,7 +177,7 @@ AudioHandle::Impl::Start(AudioHandle::AudioCallback callback)
     // Get instance of object
     if(sai2_.IsInitialized())
     {
-        // Start stream with no callback. Data will be retrieved from InternalCallback.
+        // Start stream with no callback. Data will be filled externally - from InternalCallback.
         sai2_.StartDma(buff_rx_[1], buff_tx_[1], config_.blocksize, nullptr);
     }
     sai1_.StartDma(buff_rx_[0],
@@ -290,20 +286,83 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
     if(chns == 0)
         return;
     // Handle Interleaved / Non Interleaved separate
-    // TODO: add tdm handling for interleaved_callback
-    //todo bring back bring back bring back
-    //todo bring back bring back bring back
-    //todo bring back bring back bring back
-    if(audio_handle.callback_)
+    //TODO: TDM is not supported for interleaved callbacks yet.
+    if(audio_handle.interleaved_callback_)
+    {
+        InterleavingAudioCallback cb
+            = (InterleavingAudioCallback)audio_handle.interleaved_callback_;
+        float fin[size];
+        float fout[size];
+        // There _must_ be a more elegant way to do this....
+        // Convert from int to float
+        switch(bd)
+        {
+            case SaiHandle::Config::BitDepth::SAI_16BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    fin[i] = s162f(in[i]) * audio_handle.postgain_recip_;
+                    fin[i + 1]
+                        = s162f(in[i + 1]) * audio_handle.postgain_recip_;
+                }
+                break;
+            case SaiHandle::Config::BitDepth::SAI_24BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    fin[i] = s242f(in[i]) * audio_handle.postgain_recip_;
+                    fin[i + 1]
+                        = s242f(in[i + 1]) * audio_handle.postgain_recip_;
+                }
+                break;
+            case SaiHandle::Config::BitDepth::SAI_32BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    fin[i] = s322f(in[i]) * audio_handle.postgain_recip_;
+                    fin[i + 1]
+                        = s322f(in[i + 1]) * audio_handle.postgain_recip_;
+                }
+                break;
+            default: break;
+        }
+        cb(fin, fout, size);
+        switch(bd)
+        {
+            case SaiHandle::Config::BitDepth::SAI_16BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    out[i] = f2s16(fout[i] * audio_handle.output_adjust_);
+                    out[i + 1]
+                        = f2s16(fout[i + 1] * audio_handle.output_adjust_);
+                }
+                break;
+            case SaiHandle::Config::BitDepth::SAI_24BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    out[i] = f2s24(fout[i] * audio_handle.output_adjust_);
+                    out[i + 1]
+                        = f2s24(fout[i + 1] * audio_handle.output_adjust_);
+                }
+                break;
+            case SaiHandle::Config::BitDepth::SAI_32BIT:
+                for(size_t i = 0; i < size; i += 2)
+                {
+                    out[i] = f2s32(fout[i] * audio_handle.output_adjust_);
+                    out[i + 1]
+                        = f2s32(fout[i + 1] * audio_handle.output_adjust_);
+                }
+                break;
+            default: break;
+        }
+    }
+    else if(audio_handle.callback_)
     {
         AudioCallback cb = (AudioCallback)audio_handle.callback_;
+        // offset needed for 2nd audio codec.
+        size_t offset    = audio_handle.sai2_.GetOffset();
         size_t block_size = size / 2;
-
-        // setup float buffers_ 
-        float  finbuff[chns * block_size], foutbuff[chns * block_size];
+        size_t buff_size = chns * block_size;
+        float  finbuff[buff_size], foutbuff[buff_size];
         float* fin[chns];
         float* fout[chns];
-
         fin[0]  = finbuff;
         fout[0] = foutbuff;
 
@@ -313,25 +372,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
             fout[ch] = fout[ch - 1] + block_size;
         }
 
-        // offset needed for 2nd audio codec.
-        size_t offset    = audio_handle.sai2_.GetOffset();
-        int32_t *in2 = audio_handle.buff_rx_[1] + audio_handle.sai2_.GetOffset();
-
-        volatile int32_t inputs[4][32];
-
-        for(size_t i = 0; i < block_size; i++)
-        {
-            if(chns > 4) // TDM
-            {
-                for (int ch = 0; ch < 4; ch++)
-                    in2[i * 4 + ch] = in2[i * 4 + ch] << 2;
-
-                inputs[0][i] = in2[i * 4 + 0];
-                inputs[1][i] = in2[i * 4 + 1];
-                inputs[2][i] = in2[i * 4 + 2];
-                inputs[3][i] = in2[i * 4 + 3];
-            }
-        }
+        int32_t *in2 = audio_handle.buff_rx_[1] + offset;
 
         float gain_recip = audio_handle.postgain_recip_;
         
@@ -365,17 +406,12 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[1][i] = s242f(in[i * 2 + 1]) * gain_recip;
                     if(chns > 4) // TDM
                     {
-#if 0
-                        fin[2][i] = s242f(in2[i * 4 + 0]) * gain_recip;
-                        fin[3][i] = s242f(in2[i * 4 + 1]) * gain_recip;
-                        fin[4][i] = s242f(in2[i * 4 + 2]) * gain_recip;
-                        fin[5][i] = s242f(in2[i * 4 + 3]) * gain_recip;
-#else
+                        for(int ch = 0; ch < 4; ch++)
+                            in2[i * 4 + ch] = in2[i * 4 + ch] << 2;
                         fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
                         fin[5][i] = s322f(in2[i * 4 + 3]) * gain_recip;
-#endif
                     }
                     else if(chns > 2)
                     {
@@ -409,19 +445,8 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 
         cb(fin, fout, size / 2);
 
-
         volatile float gain_adjust = audio_handle.output_adjust_;
         int32_t *out2 = audio_handle.buff_tx_[1] + offset;
-        
-        static uint32_t c = 0;
-        static bool flip = true;
-
-        if (c++ > 1500)
-        {
-            c = 0;
-            flip = !flip;
-        }
-//        flip = c==0;
 
         // Reinterleave and scale
         switch(bd)
@@ -452,40 +477,14 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s24(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
-                        #if 0
-                        out2[i * 4 + 0] = f2s24(fout[2][i] * gain_adjust) << 8;
-                        out2[i * 4 + 1] = f2s24(fout[3][i] * gain_adjust) << 8;
-                        out2[i * 4 + 2] = f2s24(fout[4][i] * gain_adjust) << 8;
-                        out2[i * 4 + 3] = f2s24(fout[5][i] * gain_adjust) << 8;
-                        #else
                         out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
                         out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
                         out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
-
-#if 1
-                        int32_t hi = 0xAAAAAAAA;
-                        int32_t lo = 0x55555555;
-                        hi = f2s32(1);
-                        lo = f2s32(-1);
-
-#if 1
-#if 0
-#define HI_val 2147483648-1 
-#else
-#define HI_val (1073741824/16)-1
-#endif
-                        hi = HI_val;
-                        lo = -hi;
-#endif
-                        out2[i * 4 + 0] = flip ? hi : lo;
-#endif
-
+                        
 #if 1// shift all by 1 bit
                         for (int ch = 0; ch <4; ch++)
                             out2[i * 4 + ch] = (out2[i * 4 + ch] >> 1) & 0x7FFFFFFF;
-#endif
-
 #endif
                     }
                     else if(chns > 2)

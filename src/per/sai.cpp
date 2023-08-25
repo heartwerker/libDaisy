@@ -20,7 +20,7 @@ class SaiHandle::Impl
     SaiHandle::Result        DeInit();
     const SaiHandle::Config& GetConfig() const { return config_; }
 
-    HAL_StatusTypeDef SAI_InitProtocolTDM(SAI_HandleTypeDef* hsai, uint32_t nbslot);
+    HAL_StatusTypeDef InitProtocolTDM(SAI_HandleTypeDef* hsai, uint32_t nbslot);
 
     SaiHandle::Result StartDmaTransfer(int32_t*                       buffer_rx,
                                        int32_t*                       buffer_tx,
@@ -42,7 +42,7 @@ class SaiHandle::Impl
     size_t                         buff_size_;
     SaiHandle::CallbackFunctionPtr callback_;
 
-    /** Offset stored for weird inter-SAI stuff -> accessing the correct buffer from InternalCallback */
+    /** Offset stored for accessing the correct part of the buffer from InternalCallback */
     size_t dma_offset;
 
     /** Callback that dispatches user callback from Cplt and HalfCplt DMA Callbacks */
@@ -192,26 +192,27 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     sai_b_handle_.Init.CompandingMode = SAI_NOCOMPANDING;
     sai_b_handle_.Init.TriState       = SAI_OUTPUT_NOTRELEASED;
 
-    // TDM
-    int nSlots = 2;
-
+    uint32_t nbslot;
 #if 0
-    if (config.tdm_channel > 0)
+    if (config.tdm_slots > 0)
     {
-        // overwrite:
         bd = SAI_PROTOCOL_DATASIZE_32BIT;
         protocol = SAI_PCM_SHORT;
 
-        nSlots = config.tdm_channel;
+        nbslot = config.tdm_slots;
+    }
+    else
+    {
+        nbslot = 2;
     }
 
-    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nSlots) != HAL_OK)
+    if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nbslot) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
     }
 
-    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nSlots) != HAL_OK)
+    if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nbslot) != HAL_OK)
     {
         Error_Handler();
         return Result::ERR;
@@ -219,14 +220,14 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
 #else
 
-    if(config.tdm_channel > 0)
+    if(config.tdm_slots > 0)
     {
-        if (SAI_InitProtocolTDM(&sai_a_handle_, config.tdm_channel)  != HAL_OK)
+        if (InitProtocolTDM(&sai_a_handle_, config.tdm_slots)  != HAL_OK)
         {
             Error_Handler();
             return Result::ERR;
          }
-        if (SAI_InitProtocolTDM(&sai_b_handle_, config.tdm_channel)  != HAL_OK)
+        if (InitProtocolTDM(&sai_b_handle_, config.tdm_slots)  != HAL_OK)
         {
             Error_Handler();
             return Result::ERR;
@@ -234,13 +235,13 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     }
     else
     {
-        if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, nSlots) != HAL_OK)
+        if(HAL_SAI_InitProtocol(&sai_a_handle_, protocol, bd, 2) != HAL_OK)
         {
             Error_Handler();
             return Result::ERR;
         }
 
-        if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, nSlots) != HAL_OK)
+        if(HAL_SAI_InitProtocol(&sai_b_handle_, protocol, bd, 2) != HAL_OK)
         {
             Error_Handler();
             return Result::ERR;
@@ -254,8 +255,8 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 
 
 // copy from SAI_InitPCM
-HAL_StatusTypeDef SaiHandle::Impl::SAI_InitProtocolTDM(SAI_HandleTypeDef* hsai,
-                                                       uint32_t nbslot)
+HAL_StatusTypeDef SaiHandle::Impl::InitProtocolTDM(SAI_HandleTypeDef* hsai,
+                                                   uint32_t           nbslot)
 {
     HAL_StatusTypeDef status = HAL_OK;
     uint32_t datasize = SAI_PROTOCOL_DATASIZE_32BIT;
@@ -432,8 +433,8 @@ SaiHandle::Impl::StartDmaTransfer(int32_t*                       buffer_rx,
     buff_rx_   = buffer_rx;
     buff_tx_   = buffer_tx;
 
-    size_t tdm_channel = GetConfig().tdm_channel;
-    size_t num_channel = tdm_channel > 0 ? tdm_channel : 2;
+    size_t tdm_slots = GetConfig().tdm_slots;
+    size_t num_channel = tdm_slots > 0 ? tdm_slots : 2; // backwards compatible tdm_slots can be 0/unset
 
     buff_size_ = block_size * 2 * num_channel ; 
     callback_  = callback;
