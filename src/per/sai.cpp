@@ -192,8 +192,8 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     sai_b_handle_.Init.CompandingMode = SAI_NOCOMPANDING;
     sai_b_handle_.Init.TriState       = SAI_OUTPUT_NOTRELEASED;
 
+#if 0 // use standard HAL_SAI_InitProtocol method for TDM and I2S
     uint32_t nbslot;
-#if 0
     if (config.tdm_slots > 0)
     {
         bd = SAI_PROTOCOL_DATASIZE_32BIT;
@@ -218,8 +218,9 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
         return Result::ERR;
     }
 
-#else
+#else // use custom InitProtocolTDM method for TDM and standard HAL_SAI_InitProtocol method for I2S
 
+    uint32_t nbslot;
     if(config.tdm_slots > 0)
     {
         if (InitProtocolTDM(&sai_a_handle_, config.tdm_slots)  != HAL_OK)
@@ -253,8 +254,7 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
     return Result::OK;
 }
 
-
-// copy from SAI_InitPCM
+// similar to stm32h7xx_hal_sai.c/SAI_InitPCM(....)
 HAL_StatusTypeDef SaiHandle::Impl::InitProtocolTDM(SAI_HandleTypeDef* hsai,
                                                    uint32_t           nbslot)
 {
@@ -433,10 +433,10 @@ SaiHandle::Impl::StartDmaTransfer(int32_t*                       buffer_rx,
     buff_rx_   = buffer_rx;
     buff_tx_   = buffer_tx;
 
-    size_t tdm_slots = GetConfig().tdm_slots;
-    size_t num_channel = tdm_slots > 0 ? tdm_slots : 2; // backwards compatible tdm_slots can be 0/unset
+    size_t tdm_slots = sai2_.GetConfig().tdm_slots;
+    size_t ch = tdm_slots > 0 ? tdm_slots : 2; // backwards compatible: if tdm_slots is 0 the act like sai2_ is 2 channels
 
-    buff_size_ = block_size * 2 * num_channel ; 
+    buff_size_ = block_size * 2 * ch;
     callback_  = callback;
 
     // This assumes there will be one master and one slave

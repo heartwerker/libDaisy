@@ -11,7 +11,7 @@ namespace daisy
 // these buffers will always be present, and usable.
 //
 static const size_t kAudioMaxBufferSize = 1024;
-static const size_t kAudioMaxChannels   = 6; // leaves more space ... but TDM will write weirdly in buff_rx[1][blocksize*2 + i] instead of buff_rx[2][i]
+static const size_t kAudioMaxChannels   = 6; // leaves more space ... but TDM data will be written in buff_rx[1][blocksize*2 + i] instead of buff_rx[2][i] ... 
 
 // Static Global Buffers
 // 8kB in SRAM1, non-cached memory
@@ -50,7 +50,7 @@ class AudioHandle::Impl
         if(sai2_.IsInitialized())
         {
             size_t tdm_slots = sai2_.GetConfig().tdm_slots;
-            ch += tdm_slots > 0 ? tdm_slots : 2; // backwards compatible tdm_slots can be 0/unset
+            ch += tdm_slots > 0 ? tdm_slots : 2; // backwards compatible: if tdm_slots is 0 the act like sai2_ is 2 channels
         }
         return ch;
     }
@@ -372,11 +372,10 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
             fout[ch] = fout[ch - 1] + block_size;
         }
 
-        int32_t *in2 = audio_handle.buff_rx_[1] + offset;
-
-        float gain_recip = audio_handle.postgain_recip_;
+        int32_t *in2 = audio_handle.buff_rx_[1] + offset; // in2 = SAI2 buffer position
+        float gain_recip = audio_handle.postgain_recip_; // to fit multiplications in 1 line later
         
-        // TODO: handle different bd for sai interfaces
+        // TODO: handle different bd for sai interfaces (eg. sai1.bd=24bit, sai2.bd=16bit)
         // Deinterleave and scale
         switch(bd)
         {
@@ -406,8 +405,10 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[1][i] = s242f(in[i * 2 + 1]) * gain_recip;
                     if(chns > 4) // TDM
                     {
+                        // TODO: generalize that better! - this is how codec_ak4619 works.
                         for(int ch = 0; ch < 4; ch++)
                             in2[i * 4 + ch] = in2[i * 4 + ch] << 2;
+
                         fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
@@ -445,8 +446,8 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
 
         cb(fin, fout, size / 2);
 
-        float gain_adjust = audio_handle.output_adjust_;
-        int32_t *out2 = audio_handle.buff_tx_[1] + offset;
+        int32_t *out2 = audio_handle.buff_tx_[1] + offset; // out2 = SAI2 buffer position
+        float gain_adjust = audio_handle.output_adjust_; // to fit multiplications in 1 line later
 
         // Reinterleave and scale
         switch(bd)
@@ -477,15 +478,14 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s24(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
+                        // TODO: generalize that better! - this is how codec_ak4619 works.
                         out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
                         out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
                         out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
-                        
-#if 1// shift all by 1 bit
+
                         for (int ch = 0; ch <4; ch++)
                             out2[i * 4 + ch] = (out2[i * 4 + ch] >> 1) & 0x7FFFFFFF;
-#endif
                     }
                     else if(chns > 2)
                     {

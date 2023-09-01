@@ -129,7 +129,7 @@ class SaiHandle
 
     /** Starts Rx and Tx in Circular Buffer Mode 
      ** The callback will be called when half of the buffer is ready, 
-     ** and will handle block_size/2 samples per callback.
+     ** and will be initialized with a size of = block_size * 2 * num_channel samples per callback.
      */
     Result StartDma(int32_t*            buffer_rx,
                     int32_t*            buffer_tx,
