@@ -258,8 +258,9 @@ SaiHandle::Result SaiHandle::Impl::Init(const SaiHandle::Config& config)
 HAL_StatusTypeDef SaiHandle::Impl::InitProtocolTDM(SAI_HandleTypeDef* hsai,
                                                    uint32_t           nbslot)
 {
+    // see: https://www.st.com/content/ccc/resource/training/technical/product_training/group0/d3/c0/b0/0e/fe/eb/40/a9/STM32H7-Peripheral-Serial-Audio-Interface_SAI/files/STM32H7-Peripheral-Serial-Audio-Interface_SAI.pdf/_jcr_content/translations/en.STM32H7-Peripheral-Serial-Audio-Interface_SAI.pdf
     HAL_StatusTypeDef status = HAL_OK;
-    uint32_t datasize = SAI_PROTOCOL_DATASIZE_32BIT;
+    uint32_t datasize = SAI_PROTOCOL_DATASIZE_32BIT; // fix to 32 bit for transfer/reality of protcol (works with ak4619). data is converted in audio.cpp/InternalCallback corresponding to bit_depth
     uint32_t protocol = SAI_PCM_SHORT;
 
     /* Check the parameters */
@@ -273,16 +274,16 @@ HAL_StatusTypeDef SaiHandle::Impl::InitProtocolTDM(SAI_HandleTypeDef* hsai,
        || (hsai->Init.AudioMode == SAI_MODESLAVE_TX))
     {
         /* Transmit */
-        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_RISINGEDGE;
+        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_FALLINGEDGE; // SAI_CLOCKSTROBING_RISINGEDGE or SAI_CLOCKSTROBING_FALLINGEDGE (SCKSTR)
     }
     else
     {
         /* Receive */
-        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_FALLINGEDGE;
+        hsai->Init.ClockStrobing = SAI_CLOCKSTROBING_RISINGEDGE; // SAI_CLOCKSTROBING_FALLINGEDGE or SAI_CLOCKSTROBING_RISINGEDGE
     }
     hsai->FrameInit.FSDefinition  = SAI_FS_STARTFRAME;
-    hsai->FrameInit.FSPolarity    = SAI_FS_ACTIVE_HIGH;
-    hsai->FrameInit.FSOffset      = SAI_FS_BEFOREFIRSTBIT;
+    hsai->FrameInit.FSPolarity    = SAI_FS_ACTIVE_LOW; // SAI_FS_ACTIVE_HIGH or SAI_FS_ACTIVE_LOW
+    hsai->FrameInit.FSOffset      = SAI_FS_BEFOREFIRSTBIT; // SAI_FS_BEFOREFIRSTBIT or SAI_FS_FIRSTBIT
     hsai->SlotInit.FirstBitOffset = 0;
     hsai->SlotInit.SlotNumber     = nbslot;
     hsai->SlotInit.SlotActive     = SAI_SLOTACTIVE_ALL;
@@ -433,7 +434,7 @@ SaiHandle::Impl::StartDmaTransfer(int32_t*                       buffer_rx,
     buff_rx_   = buffer_rx;
     buff_tx_   = buffer_tx;
 
-    size_t tdm_slots = sai2_.GetConfig().tdm_slots;
+    size_t tdm_slots = GetConfig().tdm_slots;
     size_t ch = tdm_slots > 0 ? tdm_slots : 2; // backwards compatible: if tdm_slots is 0 the act like sai2_ is 2 channels
 
     buff_size_ = block_size * 2 * ch;

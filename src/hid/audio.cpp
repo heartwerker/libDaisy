@@ -386,10 +386,11 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[1][i] = s162f(in[i * 2 + 1]) * gain_recip;
                     if (chns > 4) // TDM
                     {
-                        fin[2][i] = s162f(in2[i * 4 + 0]) * gain_recip;
-                        fin[3][i] = s162f(in2[i * 4 + 1]) * gain_recip;
-                        fin[4][i] = s162f(in2[i * 4 + 2]) * gain_recip;
-                        fin[5][i] = s162f(in2[i * 4 + 3]) * gain_recip;
+                        // TODO: works with codec_ak4619 - test if this generalizes
+                        fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
+                        fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
+                        fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
+                        fin[5][i] = s322f(in2[i * 4 + 3]) * gain_recip;
                     }
                     else if(chns > 2)
                     {
@@ -405,10 +406,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[1][i] = s242f(in[i * 2 + 1]) * gain_recip;
                     if(chns > 4) // TDM
                     {
-                        // TODO: generalize that better! - this is how codec_ak4619 works.
-                        for(int ch = 0; ch < 4; ch++)
-                            in2[i * 4 + ch] = in2[i * 4 + ch] << 2;
-
+                        // TODO: works with codec_ak4619 - test if this generalizes
                         fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
@@ -428,6 +426,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     fin[1][i] = s322f(in[i * 2 + 1]) * gain_recip;
                     if (chns > 4) // TDM
                     {
+                        // TODO: works with codec_ak4619 - test if this generalizes
                         fin[2][i] = s322f(in2[i * 4 + 0]) * gain_recip;
                         fin[3][i] = s322f(in2[i * 4 + 1]) * gain_recip;
                         fin[4][i] = s322f(in2[i * 4 + 2]) * gain_recip;
@@ -459,10 +458,11 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s16(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
-                        out2[i * 4 + 0] = f2s16(fout[2][i] * gain_adjust);
-                        out2[i * 4 + 1] = f2s16(fout[3][i] * gain_adjust);
-                        out2[i * 4 + 2] = f2s16(fout[4][i] * gain_adjust);
-                        out2[i * 4 + 3] = f2s16(fout[5][i] * gain_adjust);
+                        // TODO: works with codec_ak4619 - test if this generalizes
+                        out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
+                        out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
+                        out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
+                        out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
                     }
                     else if(chns > 2)
                     {
@@ -478,14 +478,11 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s24(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
-                        // TODO: generalize that better! - this is how codec_ak4619 works.
+                        // TODO: works with codec_ak4619 - test if this generalizes
                         out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
                         out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
                         out2[i * 4 + 3] = f2s32(fout[5][i] * gain_adjust);
-
-                        for (int ch = 0; ch <4; ch++)
-                            out2[i * 4 + ch] = (out2[i * 4 + ch] >> 1) & 0x7FFFFFFF;
                     }
                     else if(chns > 2)
                     {
@@ -501,6 +498,7 @@ void AudioHandle::Impl::InternalCallback(int32_t* in, int32_t* out, size_t size)
                     out[i * 2 + 1] = f2s32(fout[1][i] * gain_adjust);
                     if (chns > 4) // TDM
                     {
+                        // TODO: works with codec_ak4619 - test if this generalizes
                         out2[i * 4 + 0] = f2s32(fout[2][i] * gain_adjust);
                         out2[i * 4 + 1] = f2s32(fout[3][i] * gain_adjust);
                         out2[i * 4 + 2] = f2s32(fout[4][i] * gain_adjust);
