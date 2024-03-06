@@ -59,6 +59,27 @@ class Switch
     */
     void Init(dsy_gpio_pin pin, float update_rate = 0.f);
 
+    void Init()
+    {
+
+    last_update_ = System::GetNow();
+    updated_     = false;
+    state_       = 0x00;
+    // // Flip may seem opposite to logical direction,
+    // // but here 1 is pressed, 0 is not.
+    // flip_         = pol == POLARITY_INVERTED ? true : false;
+    // hw_gpio_.pin  = pin;
+    // hw_gpio_.mode = DSY_GPIO_MODE_INPUT;
+    // switch(pu)
+    // {
+    //     case PULL_UP: hw_gpio_.pull = DSY_GPIO_PULLUP; break;
+    //     case PULL_DOWN: hw_gpio_.pull = DSY_GPIO_PULLDOWN; break;
+    //     case PULL_NONE: hw_gpio_.pull = DSY_GPIO_NOPULL; break;
+    //     default: hw_gpio_.pull = DSY_GPIO_PULLUP; break;
+    // }
+    // dsy_gpio_init(&hw_gpio_);
+    }
+
     /** 
     Called at update_rate to debounce and handle timing for the switch.
     In order for events not to be missed, its important that the Edge/Pressed checks
@@ -66,14 +87,19 @@ class Switch
     */
     void Debounce();
 
+    void processDebounce(bool value);
+
+    float        activity_time_;
+    inline float sinceActivity() { return System::GetNow() - activity_time_; }
+
+
     /** \return true if a button was just pressed. */
-    inline bool RisingEdge() const { return updated_ ? state_ == 0x7f : false; }
+    bool RisingEdge();
+    // inline bool RisingEdge() const { return updated_ ? state_ == 0x7f : false; }
 
     /** \return true if the button was just released */
-    inline bool FallingEdge() const
-    {
-        return updated_ ? state_ == 0x80 : false;
-    }
+    bool FallingEdge();
+    // inline bool FallingEdge() const{ return updated_ ? state_ == 0x80 : false;}
 
     /** \return true if the button is held down (or if the toggle is on) */
     inline bool Pressed() const { return state_ == 0xff; }
@@ -89,6 +115,20 @@ class Switch
     {
         return Pressed() ? System::GetNow() - rising_edge_time_ : 0;
     }
+
+  public:
+    bool holdWasTriggered = false;
+
+
+    /** \return true if the button has been held for more than time */
+    bool holdFor(int time);
+
+    /** \return the time in milliseconds since rise */
+    inline float sinceRiseMs() const
+    {
+        return System::GetNow() - rising_edge_time_;
+    }
+
 
     /** Left for backwards compatability until next breaking change
      * \param update_rate Doesn't do anything
