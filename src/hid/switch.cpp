@@ -42,8 +42,7 @@ void Switch::Debounce()
         updated_     = true;
 
         // shift over, and introduce new state.
-        state_
-            = (state_ << 1)
+        state_ = (state_ << 1)
               | (flip_ ? !dsy_gpio_read(&hw_gpio_) : dsy_gpio_read(&hw_gpio_));
         // Set time at which button was pressed
         if(state_ == 0x7f)
@@ -64,11 +63,13 @@ void Switch::processDebounce(bool value)
 /** \return true if a button was just pressed. */
 bool Switch::RisingEdge()
 {
-    bool rise = (state_ & 0x0F) == 0x07; // used to be state_ == 0x7f;
+    // bool rise = (state_ & 0x0F) == 0x07; // used to be state_ == 0x7f;
+    bool rise = state_ == 0x7F; // used to be this
     if(rise)
         activity_time_ = System::GetNow();
         
-    bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    // bool fall = (state_ & 0x0F) == 0x08; // used to be state_ == 0x80;
+    bool fall = state_ == 0x80; // used to be this
     if(fall)
     {
         holdWasTriggered  = false;
